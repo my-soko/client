@@ -1,0 +1,61 @@
+import { Route, Routes } from "react-router-dom";
+import AllProducts from "./components/Product/AllProducts";
+import CreateProduct from "./components/Product/CreateProduct";
+import RequireAuth from "./middleware/RequireAuth";
+import Register from "./components/Auth/Register";
+import Login from "./components/Auth/Login";
+import ProductDetail from "./components/Product/ProductDetail";
+import UpdateProduct from "./components/Product/UpdateProduct";
+import Profile from "./components/Profile/Profile";
+import UpdateProfile from "./components/Profile/UpdateProfile";
+import VerifyEmail from "./components/Auth/VerifyEmail";
+import ForgotPassword from "./components/Auth/ForgotPassword";
+import ResetPassword from "./components/Auth/ResetPassword";
+import type { AppDispatch } from "./redux/store";
+import { useDispatch } from "react-redux";
+import { fetchProfile } from "./redux/reducers/authReducer";
+import { useEffect } from "react";
+
+const App = () => {
+
+  // const { user } = useSelector((state: RootState) => state.auth);
+  const dispatch = useDispatch<AppDispatch>();
+
+  useEffect(() => {
+      dispatch(fetchProfile());
+  }, [dispatch]);
+  return (
+    <div>
+      <Routes>
+        <Route path="/" element={<AllProducts />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/product/:id" element={<ProductDetail />} />
+        <Route path="/profile" element={<Profile />} />
+        <Route path="/profile/update" element={<UpdateProfile />} />
+        <Route path="/verify-email/:token" element={<VerifyEmail />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password/:token" element={<ResetPassword />} />
+
+        <Route
+          path="/create"
+          element={
+            <RequireAuth>
+              <CreateProduct />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/edit/:id"
+          element={
+            <RequireAuth>
+              <UpdateProduct />
+            </RequireAuth>
+          }
+        />
+      </Routes>
+    </div>
+  );
+};
+
+export default App;
