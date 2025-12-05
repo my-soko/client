@@ -60,8 +60,6 @@ const AllProducts: React.FC = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
         {products.map((product) => {
           const isOwner = user?.id === product.sellerId;
-
-          // Construct WhatsApp link only if logged in + not owner
           const whatsappLink =
             user && !isOwner && product.seller?.whatsappNumber
               ? `https://wa.me/${
