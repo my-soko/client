@@ -35,13 +35,14 @@ const ProductDetail: React.FC = () => {
 
   const isOwner = user?.id === currentProduct.sellerId;
 
- const whatsappLink =
-  user && !isOwner && currentProduct.seller?.whatsappNumber
-    ? `https://wa.me/${currentProduct.seller.whatsappNumber}?text=${encodeURIComponent(
-        `Hello ${currentProduct.seller.fullName}, my name is ${user.fullName}. I saw your product "${currentProduct.title}" listed and I'm very interested in it. Could you please provide more details or confirm if it's still available? Thank you!`
-      )}`
-    : null;
-
+  const whatsappLink =
+    user && !isOwner && currentProduct.seller?.whatsappNumber
+      ? `https://wa.me/${
+          currentProduct.seller.whatsappNumber
+        }?text=${encodeURIComponent(
+          `Hello ${currentProduct.seller.fullName}, my name is ${user.fullName}. I saw your product "${currentProduct.title}" listed and I'm very interested in it. Could you please provide more details or confirm if it's still available? Thank you!`
+        )}`
+      : null;
 
   const handleWhatsAppClick = () => {
     if (!user) {
@@ -50,7 +51,6 @@ const ProductDetail: React.FC = () => {
     }
     if (whatsappLink) window.open(whatsappLink, "_blank");
   };
-
 
   return (
     <div className="max-w-5xl mx-auto p-6 mt-10 bg-white shadow-xl rounded-xl border border-gray-200">
@@ -79,7 +79,9 @@ const ProductDetail: React.FC = () => {
                   <button
                     key={index}
                     className={`w-20 h-20 flex-shrink-0 rounded-lg overflow-hidden border-2 ${
-                      mainImage === img ? "border-indigo-600" : "border-gray-300"
+                      mainImage === img
+                        ? "border-indigo-600"
+                        : "border-gray-300"
                     }`}
                     onClick={() => setMainImage(img)}
                   >
@@ -94,16 +96,14 @@ const ProductDetail: React.FC = () => {
             </div>
           )}
         </div>
-
-        {/* RIGHT CONTENT */}
         <div>
           <h1 className="text-3xl font-bold text-gray-800">
             {currentProduct.title}
           </h1>
 
-          <p className="mt-3 text-gray-600 text-lg">{currentProduct.description}</p>
-
-          {/* PRICES */}
+          <p className="mt-3 text-gray-600 text-lg">
+            {currentProduct.description}
+          </p>
           <div className="mt-4">
             {currentProduct.discountPrice ? (
               <>
@@ -133,17 +133,10 @@ const ProductDetail: React.FC = () => {
             )}
           </p>
 
-          {/* <p className="mt-3 text-gray-500">
-            <span className="font-semibold">Category:</span>{" "}
-            {currentProduct.category}
-          </p> */}
-
           <p className="mt-1 text-gray-500">
             <span className="font-semibold">Seller:</span>{" "}
             {currentProduct.seller.fullName}
           </p>
-
-          {/* WhatsApp contact */}
           {!isOwner && (
             <button
               onClick={handleWhatsAppClick}
@@ -156,7 +149,11 @@ const ProductDetail: React.FC = () => {
               {user ? "Contact via WhatsApp" : "Login to Contact Seller"}
             </button>
           )}
-          <ProductReviews productId={currentProduct.id} userId={user?.id} />
+          <ProductReviews
+            productId={currentProduct.id}
+            userId={user?.id}
+            sellerId={currentProduct.sellerId}
+          />
         </div>
       </div>
     </div>

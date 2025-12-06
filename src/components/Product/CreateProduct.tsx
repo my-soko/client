@@ -4,6 +4,8 @@ import { useNavigate } from "react-router-dom";
 import type { AppDispatch, RootState } from "../../redux/store";
 import { createProduct } from "../../redux/reducers/productReducer";
 import { categories } from "../../util/Category";
+import PaymentForm from "../Payment/PaymentForm";
+import { markPaid } from "../../redux/reducers/paymentSlice";
 
 const CreateProduct: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -23,6 +25,20 @@ const CreateProduct: React.FC = () => {
   const [message, setMessage] = useState("");
   const [status, setStatus] = useState("onsale");
   const [quickSale, setQuickSale] = useState(false);
+
+
+  const { paid } = useSelector((state: RootState) => state.payment);
+ const { user } = useSelector((state: RootState) => state.auth);
+  if (!paid && user) {
+    return (
+      <PaymentForm
+        userId={user.id}
+        productId="TEMP_PRODUCT_ID" // placeholder, backend will assign actual product ID after payment
+        onSuccess={() => dispatch(markPaid())}
+
+      />
+    );
+  }
 
   // Handle image input
   const handleImages = (e: React.ChangeEvent<HTMLInputElement>) => {

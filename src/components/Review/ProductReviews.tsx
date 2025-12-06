@@ -1,16 +1,21 @@
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchReviews, fetchUserReview } from "../../redux/reducers/reviewSlice";
+import {
+  fetchReviews,
+  fetchUserReview,
+} from "../../redux/reducers/reviewSlice";
 import AddReviewPopup from "./AddReviewPopup";
 import type { AppDispatch, RootState } from "../../redux/store";
 
-const ProductReviews: React.FC<{ productId: string; userId?: string; sellerId?: string }> = ({
-  productId,
-  userId,
-  sellerId,
-}) => {
+const ProductReviews: React.FC<{
+  productId: string;
+  userId?: string;
+  sellerId?: string;
+}> = ({ productId, userId, sellerId }) => {
   const dispatch = useDispatch<AppDispatch>();
-  const { reviews = [], userReview } = useSelector((state: RootState) => state.review);
+  const { reviews = [], userReview } = useSelector(
+    (state: RootState) => state.review
+  );
   const [showPopup, setShowPopup] = useState(false);
 
   const isOwner = userId === sellerId;
@@ -22,16 +27,20 @@ const ProductReviews: React.FC<{ productId: string; userId?: string; sellerId?: 
 
   const renderStars = (rating: number) =>
     Array.from({ length: 5 }, (_, i) => (
-      <span key={i} className={i < rating ? "text-yellow-400" : "text-gray-300"}>
+      <span
+        key={i}
+        className={i < rating ? "text-yellow-400" : "text-gray-300"}
+      >
         ★
       </span>
     ));
 
   return (
     <div className="mt-10 bg-gray-50 p-6 rounded-xl shadow-inner border border-gray-200">
-      <h3 className="text-2xl font-bold mb-4 border-b pb-2">Customer Reviews</h3>
-
-      {/* ⭐ Add Review Button (hidden for seller & users who reviewed) */}
+      <h3 className="text-2xl font-bold mb-4 border-b pb-2">
+        Customer Reviews
+      </h3>
+      {/* ⭐ Add Review Section - Same logic as WhatsApp button */}
       {!isOwner && (
         <>
           {userReview ? (
@@ -49,7 +58,12 @@ const ProductReviews: React.FC<{ productId: string; userId?: string; sellerId?: 
         </>
       )}
 
-      {showPopup && <AddReviewPopup productId={productId} onClose={() => setShowPopup(false)} />}
+      {showPopup && (
+        <AddReviewPopup
+          productId={productId}
+          onClose={() => setShowPopup(false)}
+        />
+      )}
 
       {/* ⭐ Reviews List */}
       {reviews.length === 0 ? (

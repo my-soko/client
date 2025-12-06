@@ -6,6 +6,8 @@ import {
   deleteProduct,
   fetchProducts,
 } from "../../redux/reducers/productReducer";
+import Footer from "../Footer/Footer";
+import Header from "../Header/Header";
 
 const AllProducts: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -42,8 +44,9 @@ const AllProducts: React.FC = () => {
     return <div className="text-center mt-10 text-red-500">{error}</div>;
 
   return (
+    <div>
+     <Header/>
     <div className="p-6">
-      {/* CREATE POST BUTTON */}
       <div className="flex justify-end mb-10">
         <Link
           to="/create"
@@ -57,8 +60,6 @@ const AllProducts: React.FC = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
         {products.map((product) => {
           const isOwner = user?.id === product.sellerId;
-
-          // Construct WhatsApp link only if logged in + not owner
           const whatsappLink =
             user && !isOwner && product.seller?.whatsappNumber
               ? `https://wa.me/${
@@ -128,11 +129,11 @@ const AllProducts: React.FC = () => {
                     {product.discountPrice ? (
                       <div className="flex flex-col">
                         <span className="text-red-600 font-extrabold text-lg">
-                          KSH {product.discountPrice}
+                          KSH {product.discountPrice.toLocaleString()}
                         </span>
 
                         <span className="text-gray-500 line-through text-sm">
-                          KSH {product.price}
+                          KSH {product.price.toLocaleString()}
                         </span>
                       </div>
                     ) : (
@@ -217,6 +218,8 @@ const AllProducts: React.FC = () => {
           );
         })}
       </div>
+    </div>
+      <Footer/>
     </div>
   );
 };

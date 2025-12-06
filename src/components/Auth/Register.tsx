@@ -81,7 +81,7 @@ const Register = () => {
 
             <GoogleButton
               onSuccess={() => {
-                console.log("Google login success → redirecting...");
+                console.log("Google Signup success → redirecting...");
                 navigate("/");
               }}
             />
