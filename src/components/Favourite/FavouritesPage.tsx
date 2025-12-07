@@ -1,33 +1,25 @@
-import React, { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import React, { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { Link, useNavigate } from "react-router-dom";
 import type { AppDispatch, RootState } from "../../redux/store";
 import {
-  deleteProduct,
-  fetchProducts,
-} from "../../redux/reducers/productReducer";
-import Footer from "../Footer/Footer";
-import Header from "../Header/Header";
-import { Heart } from "lucide-react";
-import {
   addFavourite,
+  fetchFavourites,
   removeFavourite,
 } from "../../redux/reducers/favouriteSlice";
+import Header from "../Header/Header";
+import Footer from "../Footer/Footer";
+import { Heart } from "lucide-react";
 
-const AllProducts: React.FC = () => {
+const FavouritesPage: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
   const { favourites } = useSelector((state: RootState) => state.favourites);
-
-  const {
-    filteredProducts: products,
-    loading,
-    error,
-  } = useSelector((state: RootState) => state.product);
-
   const { user } = useSelector((state: RootState) => state.auth);
 
-  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  useEffect(() => {
+    dispatch(fetchFavourites());
+  }, [dispatch]);
 
   const renderStars = (rating: number) =>
     Array.from({ length: 5 }, (_, i) => (
@@ -39,64 +31,65 @@ const AllProducts: React.FC = () => {
       </span>
     ));
 
-  useEffect(() => {
-    dispatch(fetchProducts());
-  }, [dispatch]);
+  if (!user)
+    return <p className="p-6 text-center">Login to view your favourites</p>;
 
-  if (loading)
-    return <div className="text-center mt-10">Loading products...</div>;
-
-  if (error)
-    return <div className="text-center mt-10 text-red-500">{error}</div>;
+  if (favourites.length === 0)
+    return (
+      <div>
+        <Header />
+        <div className="p-6 text-center text-gray-700 text-lg">
+          No favourite products yet.
+        </div>
+        <Footer />
+      </div>
+    );
 
   return (
     <div>
       <Header />
-      <div className="p-6">
-        <div className="flex justify-end mb-10">
-          <Link
-            to="/create"
-            className="px-5 py-2 bg-indigo-600 text-white rounded-lg shadow-md hover:bg-indigo-700 transition"
-          >
-            + Create Post
-          </Link>
-        </div>
+      <div className="p-6 max-w-7xl mx-auto">
+        <button
+          onClick={() => navigate("/")}
+          className="flex items-center text-blue-600 mb-6"
+        >
+          <span className="text-2xl mr-1 font-bold hover:underline">
+            ← Back Home
+          </span>
+        </button>
 
-        {/* PRODUCT GRID */}
+        <h1 className="text-2xl font-bold mb-6">Your Favourites</h1>
+
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
-          {products.map((product) => {
+          {favourites.map((fav) => {
+            const product = fav.product;
             const isOwner = user?.id === product.sellerId;
             const whatsappLink =
-              user && !isOwner && product.seller?.whatsappNumber
+              !isOwner && product.seller?.whatsappNumber
                 ? `https://wa.me/${
                     product.seller.whatsappNumber
                   }?text=${encodeURIComponent(
-                    `Hello ${product.seller.fullName}, my name is ${user.fullName}. I came across your product "${product.title}" and I'm very interested. Could you provide more details or let me know if it's still available? Thank you!`
+                    `Hello ${product.seller.fullName}, my name is ${user.fullName}. I came across your product "${product.title}" and I'm interested.`
                   )}`
                 : null;
 
             return (
               <div
-                key={product.id}
+                key={fav.id}
                 className="bg-white border rounded-xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden group relative"
               >
                 <Link to={`/product/${product.id}`}>
-                  {/* IMAGE */}
                   <div className="aspect-[4/3] bg-gray-100 overflow-hidden relative">
-                    {/* QUICK SALE BADGE */}
                     {product.quickSale && product.status !== "sold" && (
                       <span className="absolute top-3 left-3 bg-red-600 text-white text-xs font-bold px-3 py-1 rounded-full shadow-md flex items-center gap-1 animate-pulse">
                         🔥 Quick Sale
                       </span>
                     )}
-
-                    {/* SOLD BADGE */}
                     {product.status === "sold" && (
                       <span className="absolute top-3 left-3 bg-black text-white text-xs font-bold px-3 py-1 rounded-full shadow-md flex items-center gap-1">
                         ❌ Sold
                       </span>
                     )}
-
                     {product.imageUrl ? (
                       <img
                         src={product.imageUrl}
@@ -110,16 +103,13 @@ const AllProducts: React.FC = () => {
                     )}
                   </div>
 
-                  {/* TEXT INFO */}
                   <div className="p-4">
                     <h2 className="text-lg font-semibold truncate">
                       {product.title}
                     </h2>
-
                     <p className="text-gray-600 text-sm mt-1 line-clamp-2">
                       {product.description}
                     </p>
-
                     {product.averageRating !== undefined && (
                       <div className="flex items-center gap-2 mt-2">
                         <div className="flex text-lg">
@@ -137,7 +127,6 @@ const AllProducts: React.FC = () => {
                           <span className="text-red-600 font-extrabold text-lg">
                             KSH {product.discountPrice.toLocaleString()}
                           </span>
-
                           <span className="text-gray-500 line-through text-sm">
                             KSH {product.price.toLocaleString()}
                           </span>
@@ -148,6 +137,7 @@ const AllProducts: React.FC = () => {
                         </span>
                       )}
                     </div>
+
                     <p className="mt-3 text-gray-800 text-lg">
                       <span className="font-semibold">Stock:</span>{" "}
                       {product.stockInCount > 0 ? (
@@ -163,37 +153,36 @@ const AllProducts: React.FC = () => {
                   </div>
                 </Link>
 
+                {/* Favourite Button */}
                 <div className="absolute top-3 right-3 z-20">
-                  {user && !isOwner && (
-                    <div className="absolute top-3 right-3 z-20">
-                      <button
-                        onClick={(e) => {
-                          e.preventDefault(); 
-                          const isFav = favourites.some(
-                            (fav) => fav.productId === product.id
-                          );
-                          if (isFav) {
-                            dispatch(removeFavourite(product.id));
-                          } else {
-                            dispatch(addFavourite(product.id));
-                          }
-                        }}
-                        className="p-2 rounded-full bg-white shadow-md hover:bg-gray-100 transition"
-                      >
-                        <Heart
-                          size={24}
-                          className={`transition ${
-                            favourites.some(
-                              (fav) => fav.productId === product.id
-                            )
-                              ? "fill-red-500 text-red-500"
-                              : "text-gray-500"
-                          }`}
-                        />
-                      </button>
-                    </div>
+                  {isOwner && user && (
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        const isFav = favourites.some(
+                          (f) => f.productId === product.id
+                        );
+                        if (isFav) {
+                          dispatch(removeFavourite(product.id));
+                        } else {
+                          dispatch(addFavourite(product.id));
+                        }
+                      }}
+                      className="p-2 rounded-full bg-white shadow-md hover:bg-gray-100 transition"
+                    >
+                      <Heart
+                        size={24}
+                        className={`transition ${
+                          favourites.some((f) => f.productId === product.id)
+                            ? "fill-red-500 text-red-500"
+                            : "text-gray-500"
+                        }`}
+                      />
+                    </button>
                   )}
                 </div>
+
+                {/* Contact Seller */}
                 <div className="p-4 flex flex-col gap-2">
                   {!isOwner && (
                     <button
@@ -213,38 +202,6 @@ const AllProducts: React.FC = () => {
                       {user ? "Contact Seller" : "Login to Contact Seller"}
                     </button>
                   )}
-                  {isOwner && (
-                    <div className="absolute top-3 right-3 z-20">
-                      <button
-                        onClick={() =>
-                          setOpenMenuId(
-                            openMenuId === product.id ? null : product.id
-                          )
-                        }
-                        className="p-2 bg-white/90 backdrop-blur-sm shadow-md rounded-full hover:bg-gray-100"
-                      >
-                        ⋮
-                      </button>
-
-                      {openMenuId === product.id && (
-                        <div className="absolute right-0 mt-2 w-36 bg-white border shadow-xl rounded-lg overflow-hidden">
-                          <Link
-                            to={`/edit/${product.id}`}
-                            className="block px-4 py-2 text-yellow-600 hover:bg-gray-100"
-                          >
-                            ✏️ Edit
-                          </Link>
-
-                          <button
-                            onClick={() => dispatch(deleteProduct(product.id))}
-                            className="block w-full text-left px-4 py-2 text-red-600 hover:bg-gray-100"
-                          >
-                            🗑 Delete
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  )}
                 </div>
               </div>
             );
@@ -256,4 +213,4 @@ const AllProducts: React.FC = () => {
   );
 };
 
-export default AllProducts;
+export default FavouritesPage;

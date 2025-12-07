@@ -4,6 +4,7 @@ import { registerUser } from "../../redux/reducers/authReducer";
 import type { AppDispatch, RootState } from "../../redux/store";
 import { Link, useNavigate } from "react-router-dom";
 import GoogleButton from "./GoogleButton";
+import TermsPopup from "../modals/TermsPopup";
 
 const Register = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -16,7 +17,9 @@ const Register = () => {
     password: "",
   });
 
+  const [agree, setAgree] = useState(false);
   const [successMsg, setSuccessMsg] = useState("");
+  const [showTerms, setShowTerms] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -24,6 +27,9 @@ const Register = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!agree) return; // extra protection
+
     const res = await dispatch(registerUser(formData));
 
     if (registerUser.fulfilled.match(res)) {
@@ -71,17 +77,44 @@ const Register = () => {
               onChange={handleChange}
             />
 
+            {/* TERMS & CONDITIONS CHECKBOX */}
+            <label className="flex items-start space-x-3 text-sm text-gray-700">
+              <input
+                type="checkbox"
+                className="mt-1"
+                checked={agree}
+                onChange={() => setAgree(!agree)}
+              />
+              <span>
+                I agree to the{" "}
+                <span
+                  onClick={() => setShowTerms(true)}
+                  className="text-blue-600 font-semibold cursor-pointer"
+                >
+                  Terms & Conditions
+                </span>{" "}
+                and{" "}
+                <span className="text-blue-600 font-semibold cursor-pointer">
+                  Privacy Policy
+                </span>
+                .
+              </span>
+            </label>
+
             <button
               type="submit"
-              className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition font-medium"
-              disabled={loading}
+              className={`w-full py-3 rounded-lg text-white transition font-medium ${
+                agree
+                  ? "bg-blue-600 hover:bg-blue-700"
+                  : "bg-gray-400 cursor-not-allowed"
+              }`}
+              disabled={!agree || loading}
             >
               {loading ? "Creating account..." : "Register"}
             </button>
 
             <GoogleButton
               onSuccess={() => {
-                console.log("Google Signup success → redirecting...");
                 navigate("/");
               }}
             />
@@ -98,6 +131,7 @@ const Register = () => {
           </form>
         )}
       </div>
+      <TermsPopup open={showTerms} onClose={() => setShowTerms(false)} />
     </div>
   );
 };

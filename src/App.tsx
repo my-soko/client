@@ -15,6 +15,7 @@ import type { AppDispatch } from "./redux/store";
 import { useDispatch } from "react-redux";
 import { fetchProfile } from "./redux/reducers/authReducer";
 import { useEffect } from "react";
+import FavouritesPage from "./components/Favourite/FavouritesPage";
 
 const App = () => {
 
@@ -36,6 +37,8 @@ const App = () => {
         <Route path="/verify-email/:token" element={<VerifyEmail />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password/:token" element={<ResetPassword />} />
+        <Route path="/favourites" element={<FavouritesPage />} />
+
 
         <Route
           path="/create"
