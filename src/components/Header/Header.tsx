@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch, RootState } from "../../redux/store";
@@ -8,11 +8,17 @@ import {
   setCategoryFilter,
   setSearchQuery,
 } from "../../redux/reducers/productReducer";
-import { Menu, X, User } from "lucide-react";
+import { Menu, X, User, Heart } from "lucide-react";
+
+import {
+  fetchFavourites,
+  selectFavourites,
+} from "../../redux/reducers/favouriteSlice";
 
 const Header: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
   const user = useSelector((state: RootState) => state.auth.user);
+  const favourites = useSelector(selectFavourites);
 
   const [open, setOpen] = useState(false);
 
@@ -21,10 +27,15 @@ const Header: React.FC = () => {
     setOpen(false);
   };
 
+  useEffect(() => {
+    if (user) {
+      dispatch(fetchFavourites());
+    }
+  }, [dispatch, user]);
+
   return (
     <header className="bg-white shadow-md p-4 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
-
         {/* LOGO */}
         <Link
           to="/"
@@ -35,32 +46,41 @@ const Header: React.FC = () => {
         </Link>
 
         {/* DESKTOP SEARCH BAR */}
-     {/* SEARCH + CATEGORY (DESKTOP) */}
-<div className="hidden md:flex items-center gap-4 flex-1">
+        {/* SEARCH + CATEGORY (DESKTOP) */}
+        <div className="hidden md:flex items-center gap-4 flex-1">
+          {/* SEARCH BAR */}
+          <input
+            type="text"
+            placeholder="Search products..."
+            className="w-full border rounded-lg p-2 focus:ring-2 focus:ring-indigo-500"
+            onChange={(e) => dispatch(setSearchQuery(e.target.value))}
+          />
 
-  {/* SEARCH BAR */}
-  <input
-    type="text"
-    placeholder="Search products..."
-    className="w-full border rounded-lg p-2 focus:ring-2 focus:ring-indigo-500"
-    onChange={(e) => dispatch(setSearchQuery(e.target.value))}
-  />
+          {/* CATEGORY FILTER */}
+          <select
+            className="w-full border rounded-lg p-2 focus:ring-2 focus:ring-indigo-500"
+            onChange={(e) => dispatch(setCategoryFilter(e.target.value))}
+          >
+            <option value="">Category</option>
+            {categories.map((cat) => (
+              <option key={cat} value={cat}>
+                {cat}
+              </option>
+            ))}
+          </select>
+        </div>
+        {/* Favourites Heart Button */}
+        {user && (
+          <Link to="/favourites" className="relative">
+            <Heart className="w-7 h-7 text-gray-600 hover:text-red-500" />
 
-  {/* CATEGORY FILTER */}
-  <select
-    className="w-full border rounded-lg p-2 focus:ring-2 focus:ring-indigo-500"
-    onChange={(e) => dispatch(setCategoryFilter(e.target.value))}
-  >
-    <option value="">Category</option>
-    {categories.map((cat) => (
-      <option key={cat} value={cat}>
-        {cat}
-      </option>
-    ))}
-  </select>
-
-</div>
-
+            {favourites.length > 0 && (
+              <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full">
+                {favourites.length}
+              </span>
+            )}
+          </Link>
+        )}
 
         {/* DESKTOP AUTH SECTION */}
         <div className="hidden md:flex items-center gap-4">
@@ -89,10 +109,7 @@ const Header: React.FC = () => {
         </div>
 
         {/* MOBILE HAMBURGER BUTTON */}
-        <button
-          className="md:hidden p-2"
-          onClick={() => setOpen(!open)}
-        >
+        <button className="md:hidden p-2" onClick={() => setOpen(!open)}>
           {open ? <X size={28} /> : <Menu size={28} />}
         </button>
       </div>
@@ -100,7 +117,6 @@ const Header: React.FC = () => {
       {/* MOBILE MENU */}
       {open && (
         <div className="md:hidden mt-4 bg-white shadow-lg rounded-lg p-4 space-y-4">
-
           {/* SEARCH BAR MOBILE */}
           <input
             type="text"
@@ -124,10 +140,18 @@ const Header: React.FC = () => {
 
           {/* NAV LINKS */}
           <nav className="flex flex-col gap-3 text-lg">
-            <Link to="/" onClick={() => setOpen(false)} className="hover:text-indigo-600">
+            <Link
+              to="/"
+              onClick={() => setOpen(false)}
+              className="hover:text-indigo-600"
+            >
               Home
             </Link>
-            <Link to="/products" onClick={() => setOpen(false)} className="hover:text-indigo-600">
+            <Link
+              to="/products"
+              onClick={() => setOpen(false)}
+              className="hover:text-indigo-600"
+            >
               Products
             </Link>
           </nav>

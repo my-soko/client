@@ -12,6 +12,7 @@ interface Review {
 }
 
 interface ReviewState {
+  length: number;
   reviews: Review[];
   userReview: Review | null;
   loading: boolean;

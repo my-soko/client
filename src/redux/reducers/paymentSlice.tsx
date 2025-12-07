@@ -17,16 +17,29 @@ interface InitiatePaymentArgs {
   userId: string;
   productId: string;
   phone: string;
+  productData: FormData;
 }
+const initialState: PaymentState = {
+  loading: false,
+  error: null,
+  paymentData: null,
+  paid: false,
+};
 const API_URL = "http://localhost:5000/api/payment";
 // Async thunk for initiating STK Push
 export const initiatePayment = createAsyncThunk<
   PaymentData,
   InitiatePaymentArgs,
   { rejectValue: string }
->("payment/initiate", async ({ userId, productId, phone }, { rejectWithValue }) => {
+>("payment/initiate", async ({ userId, phone, productData }, { rejectWithValue }) => {
   try {
-    const response = await axios.post(`${API_URL}/initiate`, { userId, productId, phone });
+    const payload = {
+      userId,
+      phone,
+      productData: Object.fromEntries(productData.entries())  // <-- convert FormData to JSON
+    };
+
+    const response = await axios.post(`${API_URL}/initiate`, payload);
     return response.data;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (err: any) {
@@ -34,12 +47,7 @@ export const initiatePayment = createAsyncThunk<
   }
 });
 
-const initialState: PaymentState = {
-  loading: false,
-  error: null,
-  paymentData: null,
-  paid: false,
-};
+
 
 const paymentSlice = createSlice({
   name: "payment",

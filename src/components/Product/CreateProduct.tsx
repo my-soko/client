@@ -2,16 +2,25 @@ import React, { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import type { AppDispatch, RootState } from "../../redux/store";
-import { createProduct } from "../../redux/reducers/productReducer";
+
 import { categories } from "../../util/Category";
 import PaymentForm from "../Payment/PaymentForm";
-import { markPaid } from "../../redux/reducers/paymentSlice";
+import { createProduct } from "../../redux/reducers/productReducer";
 
 const CreateProduct: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
 
   const { loading, error } = useSelector((state: RootState) => state.product);
+  const { user } = useSelector((state: RootState) => state.auth);
+  const isAdmin = user?.role === "admin";
+
+  const [showPayment, setShowPayment] = useState(false);
+  const [formLocked, setFormLocked] = useState(false);
+  const [paymentDone, setPaymentDone] = useState(false);
+
+  const [tempProductData, setTempProductData] = useState<FormData | null>(null);
+  const [message, setMessage] = useState("");
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -19,28 +28,16 @@ const CreateProduct: React.FC = () => {
   const [discountPrice, setDiscountPrice] = useState("");
   const [stockInCount, setStockInCount] = useState("");
   const [category, setCategory] = useState("");
-  const [whatsappNumber, setWhatsappNumber] = useState("");
-  const [images, setImages] = useState<File[]>([]);
-  const [preview, setPreview] = useState<string[]>([]);
-  const [message, setMessage] = useState("");
   const [status, setStatus] = useState("onsale");
   const [quickSale, setQuickSale] = useState(false);
+  const [whatsappNumber, setWhatsappNumber] = useState(
+    user?.whatsappNumber || ""
+  );
 
+  const [images, setImages] = useState<File[]>([]);
+  const [preview, setPreview] = useState<string[]>([]);
 
-  const { paid } = useSelector((state: RootState) => state.payment);
- const { user } = useSelector((state: RootState) => state.auth);
-  if (!paid && user) {
-    return (
-      <PaymentForm
-        userId={user.id}
-        productId="TEMP_PRODUCT_ID" // placeholder, backend will assign actual product ID after payment
-        onSuccess={() => dispatch(markPaid())}
-
-      />
-    );
-  }
-
-  // Handle image input
+  // IMAGE UPLOAD
   const handleImages = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files) return;
     const files = Array.from(e.target.files);
@@ -48,162 +45,231 @@ const CreateProduct: React.FC = () => {
     setPreview(files.map((file) => URL.createObjectURL(file)));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+// PRODUCT SUBMISSION
+const handleSubmit = (e: React.FormEvent) => {
+  e.preventDefault();
 
-    const formData = new FormData();
-    formData.append("title", title);
-    formData.append("description", description);
-    formData.append("price", price);
-    formData.append("discountPrice", discountPrice);
-    formData.append("stockInCount", stockInCount);
-    formData.append("status", status);
-    formData.append("quickSale", quickSale.toString());
-    formData.append("category", category);
-    formData.append("whatsappNumber", whatsappNumber);
-    images.forEach((img) => formData.append("images", img));
+  if (!whatsappNumber.trim()) {
+    alert("Please add your WhatsApp number before proceeding.");
+    return;
+  }
 
-    const res = await dispatch(createProduct(formData));
+  const fd = new FormData();
+  fd.append("title", title);
+  fd.append("description", description);
+  fd.append("price", price);
+  fd.append("discountPrice", discountPrice);
+  fd.append("stockInCount", stockInCount);
+  fd.append("status", status);
+  fd.append("quickSale", quickSale.toString());
+  fd.append("category", category);
+  fd.append("whatsappNumber", whatsappNumber);
 
-    if (createProduct.fulfilled.match(res)) {
+  images.forEach((img) => fd.append("images", img));
+
+  setTempProductData(fd);
+
+  // Only prompt payment for non-admins
+  if (!isAdmin && !paymentDone) {
+    setFormLocked(true);
+    setShowPayment(true);
+    return;
+  }
+  processProductCreation(fd);
+};
+
+  const processProductCreation = async (formData: FormData) => {
+    const result = await dispatch(createProduct(formData));
+    if (createProduct.fulfilled.match(result)) {
       setMessage("Product created successfully 🎉");
-
-      // Redirect after success
-      setTimeout(() => {
-        navigate("/");
-      }, 1000);
+      setTimeout(() => navigate("/"), 1000);
     }
+    setFormLocked(false);
   };
 
   return (
-    <div className="max-w-xl mx-auto p-5 bg-white shadow rounded mt-10">
-      <h2 className="text-2xl font-bold mb-4">Create New Product</h2>
+    <div className="min-h-screen bg-gray-100 px-4 py-8">
+      {/* PAYMENT POPUP */}
+      {showPayment && tempProductData && user && (
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+          <div className="bg-white p-5 rounded-xl shadow-xl w-full max-w-md relative">
+            <button
+              onClick={() => {
+                setShowPayment(false);
+                setFormLocked(false);
+              }}
+              className="absolute top-3 right-3 text-red-500 font-bold"
+            >
+              ✕
+            </button>
 
-      {message && (
-        <p className="mb-4 text-green-600 font-semibold">{message}</p>
-      )}
-      {error && <p className="mb-4 text-red-500 font-semibold">{error}</p>}
-
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <input
-          type="text"
-          placeholder="Product Title"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          className="w-full border p-2 rounded"
-          required
-        />
-
-        <textarea
-          placeholder="Product Description"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          className="w-full border p-2 rounded"
-          required
-        />
-
-        <input
-          type="number"
-          placeholder="Price"
-          value={price}
-          onChange={(e) => setPrice(e.target.value)}
-          className="w-full border p-2 rounded"
-          required
-        />
-
-        <input
-          className="w-full border p-2 rounded"
-          type="number"
-          name="discountPrice"
-          placeholder="Discount Price (leave blank for no discount)"
-          value={discountPrice}
-          onChange={(e) => setDiscountPrice(e.target.value)}
-          min="0"
-          step="0.01"
-        />
-
-        <input
-          className="w-full border p-2 rounded"
-          type="number"
-          name="countInStock"
-          placeholder="Count in Stock"
-          value={stockInCount}
-          onChange={(e) => setStockInCount(e.target.value)}
-          required
-          min="0"
-        />
-
-        <select
-          value={status}
-          onChange={(e) => setStatus(e.target.value)}
-          className="w-full border p-2 rounded"
-        >
-          <option value="onsale">On Sale</option>
-          <option value="sold">Sold</option>
-        </select>
-
-        <label className="flex items-center space-x-2">
-          <input
-            type="checkbox"
-            checked={quickSale}
-            onChange={(e) => setQuickSale(e.target.checked)}
-          />
-          <span>Mark as Quick Sale</span>
-        </label>
-
-        <select
-          className="w-full border rounded-lg p-2 focus:ring-2 focus:ring-indigo-500"
-          name="category"
-          value={category}
-          onChange={(e) => setCategory(e.target.value)}
-          required
-        >
-          <option value="">Choose Category</option>
-          {categories.map((cat) => (
-            <option key={cat} value={cat}>
-              {cat}
-            </option>
-          ))}
-        </select>
-
-        <input
-          type="text"
-          placeholder="WhatsApp Number"
-          value={whatsappNumber}
-          onChange={(e) => setWhatsappNumber(e.target.value)}
-          className="w-full border p-2 rounded"
-          required
-        />
-
-        <input
-          type="file"
-          multiple
-          accept="image/*"
-          onChange={handleImages}
-          className="w-full"
-          required
-        />
-
-        {preview.length > 0 && (
-          <div className="grid grid-cols-3 gap-2 mt-3">
-            {preview.map((src, i) => (
-              <img
-                key={i}
-                src={src}
-                className="w-full h-24 object-cover rounded"
-              />
-            ))}
+            <PaymentForm
+              userId={user.id}
+              productId="temp"
+              productData={tempProductData}
+              onSuccess={() => {
+                setPaymentDone(true);
+                setFormLocked(false);
+                setShowPayment(false);
+                setMessage(
+                  "Payment successful! You can now complete your product listing."
+                );
+              }}
+            />
           </div>
+        </div>
+      )}
+
+      {/* BACK BUTTON */}
+      <button
+        onClick={() => navigate("/")}
+        className="flex items-center text-blue-600 mb-6 hover:underline"
+      >
+        <span className="text-2xl mr-1">←</span> Back to Home
+      </button>
+
+      {/* FORM */}
+      <div className="max-w-2xl mx-auto bg-white p-8 rounded-2xl shadow">
+        <h2 className="text-3xl font-bold text-center mb-6">Create Product</h2>
+
+        {message && (
+          <p className="text-green-600 bg-green-100 p-2 rounded text-center">
+            {message}
+          </p>
+        )}
+        {error && (
+          <p className="text-red-600 bg-red-100 p-2 rounded text-center">
+            {error}
+          </p>
         )}
 
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full bg-blue-600 text-white p-2 rounded hover:bg-blue-700"
-        >
-          {loading ? "Posting..." : "Create Product"}
-        </button>
-      </form>
+        <form onSubmit={handleSubmit} className="space-y-5">
+          <input
+            type="text"
+            placeholder="Product Title"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            required
+            disabled={formLocked}
+            className="w-full border p-3 rounded"
+          />
+          <textarea
+            placeholder="Description"
+            rows={4}
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            required
+            disabled={formLocked}
+            className="w-full border p-3 rounded"
+          />
+
+          <div className="grid grid-cols-2 gap-4">
+            <input
+              type="number"
+              placeholder="Price"
+              value={price}
+              onChange={(e) => setPrice(e.target.value)}
+              required
+              disabled={formLocked}
+              className="w-full border p-3 rounded"
+            />
+            <input
+              type="number"
+              placeholder="Discount Price (optional)"
+              value={discountPrice}
+              onChange={(e) => setDiscountPrice(e.target.value)}
+              disabled={formLocked}
+              className="w-full border p-3 rounded"
+            />
+          </div>
+
+          <input
+            type="number"
+            placeholder="Stock Count"
+            value={stockInCount}
+            onChange={(e) => setStockInCount(e.target.value)}
+            required
+            disabled={formLocked}
+            className="w-full border p-3 rounded"
+          />
+
+          <select
+            value={status}
+            onChange={(e) => setStatus(e.target.value)}
+            disabled={formLocked}
+            className="w-full border p-3 rounded"
+          >
+            <option value="onsale">On Sale</option>
+            <option value="sold">Sold</option>
+          </select>
+
+          <label className="flex items-center space-x-3">
+            <input
+              type="checkbox"
+              checked={quickSale}
+              onChange={(e) => setQuickSale(e.target.checked)}
+              disabled={formLocked}
+            />
+            <span>Quick Sale</span>
+          </label>
+
+          <select
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+            required
+            disabled={formLocked}
+            className="w-full border p-3 rounded"
+          >
+            <option value="">Choose Category</option>
+            {categories.map((cat) => (
+              <option key={cat} value={cat}>
+                {cat}
+              </option>
+            ))}
+          </select>
+
+          <input
+            type="text"
+            placeholder="WhatsApp Number"
+            value={whatsappNumber}
+            onChange={(e) => setWhatsappNumber(e.target.value)}
+            required
+            disabled={formLocked}
+            className="w-full border p-3 rounded"
+          />
+
+          <input
+            type="file"
+            multiple
+            accept="image/*"
+            onChange={handleImages}
+            required
+            disabled={formLocked}
+            className="w-full"
+          />
+
+          {/* IMAGE PREVIEW */}
+          {preview.length > 0 && (
+            <div className="grid grid-cols-3 gap-3 mt-4">
+              {preview.map((src, i) => (
+                <img
+                  key={i}
+                  src={src}
+                  className="w-full h-28 object-cover rounded border"
+                />
+              ))}
+            </div>
+          )}
+
+          <button
+            type="submit"
+            disabled={loading || formLocked}
+            className="w-full bg-blue-600 text-white p-3 rounded disabled:bg-gray-400"
+          >
+            {loading ? "Processing..." : "Create Product"}
+          </button>
+        </form>
+      </div>
     </div>
   );
 };
