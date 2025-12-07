@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import type { AppDispatch, RootState } from "../../redux/store";
@@ -6,6 +6,7 @@ import type { AppDispatch, RootState } from "../../redux/store";
 import { categories } from "../../util/Category";
 import PaymentForm from "../Payment/PaymentForm";
 import { createProduct } from "../../redux/reducers/productReducer";
+import { setFee } from "../../redux/reducers/paymentSlice";
 
 const CreateProduct: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -86,6 +87,21 @@ const handleSubmit = (e: React.FormEvent) => {
     }
     setFormLocked(false);
   };
+
+useEffect(() => {
+  if (!tempProductData) return;
+
+  const discount = Number(tempProductData.get("discountPrice"));
+  const price = Number(tempProductData.get("price"));
+
+  const basePrice = discount || price;
+
+  const fee = Math.max(1, Math.ceil(basePrice * 0.01));
+
+  dispatch(setFee({ basePrice, fee }));
+}, [dispatch, tempProductData]);
+
+
 
   return (
     <div className="min-h-screen bg-gray-100 px-4 py-8">
