@@ -152,10 +152,9 @@ const FavouritesPage: React.FC = () => {
                     </p>
                   </div>
                 </Link>
-
                 {/* Favourite Button */}
                 <div className="absolute top-3 right-3 z-20">
-                  {isOwner && user && (
+                  {user && !isOwner && (
                     <button
                       onClick={(e) => {
                         e.preventDefault();

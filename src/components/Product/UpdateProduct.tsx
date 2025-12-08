@@ -17,11 +17,14 @@ const UpdateProduct: React.FC = () => {
     (state: RootState) => state.product
   );
   const product = products.find((p) => p.id === id);
-
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [formLocked, setFormLocked] = useState(false);
   const [title, setTitle] = useState(product?.title || "");
   const [description, setDescription] = useState(product?.description || "");
   const [price, setPrice] = useState(product?.price.toString() || "");
   const [category, setCategory] = useState(product?.category || "");
+  const [brand, setBrand] = useState(product?.brand || "");
+  const [condition, setCondition] = useState(product?.condition || "");
   const [mainImage, setMainImage] = useState<File | null>(null);
   const [previewImages, setPreviewImages] = useState<string[]>([]);
   const [discountPrice, setDiscountPrice] = useState(
@@ -58,6 +61,8 @@ const UpdateProduct: React.FC = () => {
     formData.append("description", description);
     // formData.append("price", price);
     formData.append("category", category);
+    formData.append("brand", brand);
+    formData.append("condition", condition);
     // formData.append("discountPrice", discountPrice);
     formData.append("stockInCount", stockInCount);
 
@@ -184,23 +189,73 @@ const UpdateProduct: React.FC = () => {
             />
           </div>
 
+          {/* CATEGORY SELECT */}
           <div>
+            <label className="block text-gray-700 font-medium mb-1">
+              Category
+            </label>
             <select
-              className="w-full border rounded-lg p-2 focus:ring-2 focus:ring-indigo-500"
-              name="category"
               value={category}
-              onChange={(e) => setCategory(e.target.value)}
+              onChange={(e) => {
+                setCategory(e.target.value);
+                setBrand(""); // reset brand when category changes
+              }}
               required
+              disabled={formLocked} // for CreateProduct
+              className="w-full border p-3 rounded"
             >
               <option value="">Choose Category</option>
               {categories.map((cat) => (
-                <option key={cat} value={cat}>
-                  {cat}
+                <option key={cat.name} value={cat.name}>
+                  {cat.name}
                 </option>
               ))}
             </select>
           </div>
+
+          {/* BRAND SELECT */}
+          <div>
+            <label className="block text-gray-700 font-medium mb-1">
+              Brand
+            </label>
+            <select
+              value={brand}
+              onChange={(e) => setBrand(e.target.value)}
+              required
+              disabled={formLocked || !category} // disable if no category
+              className="w-full border p-3 rounded"
+            >
+              <option value="">Choose Brand</option>
+              {category &&
+                categories
+                  .find((c) => c.name === category)
+                  ?.brands.map((bnd) => (
+                    <option key={bnd} value={bnd}>
+                      {bnd}
+                    </option>
+                  ))}
+            </select>
+          </div>
         </div>
+
+        {/* CONDITION SELECT */}
+        <div>
+          <label className="block text-gray-700 font-medium mb-1">
+            Condition
+          </label>
+          <select
+            value={condition}
+            onChange={(e) => setCondition(e.target.value)}
+            required
+            className="w-full border p-3 rounded"
+          >
+            <option value="">Choose Condition</option>
+            <option value="BRAND_NEW">Brand New</option>
+            <option value="SLIGHTLY_USED">Slightly Used</option>
+            <option value="REFURBISHED">Refurbished</option>
+          </select>
+        </div>
+
         {/* STATUS FIELD */}
         <div>
           <label className="block text-gray-700 font-medium mb-1">

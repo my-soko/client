@@ -3,9 +3,6 @@ import axios from "axios";
 
 const API_URL = "http://localhost:5000/api/product";
 
-// ----------------------------
-// TYPES
-// ----------------------------
 export interface Seller {
   fullName: string;
   email: string;
@@ -22,6 +19,8 @@ export interface Product {
   status: string;
   quickSale: boolean;
   category: string;
+  brand: string;
+  condition: "BRAND_NEW" | "SLIGHTLY_USED" | "REFURBISHED";
   imageUrl: string;
   images: string[];
   sellerId: string;
@@ -44,6 +43,8 @@ interface ProductState {
   error: string | null;
   categoryFilter: string;
   searchQuery: string;
+  brandFilter: string;
+  conditionFilter: string;
 }
 
 // ----------------------------
@@ -57,6 +58,8 @@ const initialState: ProductState = {
   error: null,
   categoryFilter: "",
   searchQuery: "",
+  brandFilter: "",
+  conditionFilter: "",
 };
 
 // ----------------------------
@@ -68,7 +71,9 @@ export const fetchProducts = createAsyncThunk<
   { rejectValue: ErrorResponse } // reject value type
 >("product/fetchProducts", async (_, { rejectWithValue }) => {
   try {
-    const response = await axios.get<Product[]>(API_URL, { withCredentials: true });
+    const response = await axios.get<Product[]>(API_URL, {
+      withCredentials: true,
+    });
     return response.data;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (err: any) {
@@ -94,7 +99,6 @@ export const createProduct = createAsyncThunk<
   }
 });
 
-
 export const updateProduct = createAsyncThunk<
   { message: string; product: Product },
   { id: string; formData: FormData },
@@ -118,7 +122,9 @@ export const fetchProductById = createAsyncThunk<
   { rejectValue: ErrorResponse }
 >("product/fetchProductById", async (id, { rejectWithValue }) => {
   try {
-    const response = await axios.get<Product>(`${API_URL}/${id}`, { withCredentials: true });
+    const response = await axios.get<Product>(`${API_URL}/${id}`, {
+      withCredentials: true,
+    });
     return response.data;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (err: any) {
@@ -142,12 +148,18 @@ export const deleteProduct = createAsyncThunk<
   }
 });
 
+// export const setBrandFilter = (brand: string) => ({
+//   type: "SET_BRAND_FILTER",
+//   payload: brand,
+// });
+
 const productSlice = createSlice({
   name: "product",
   initialState,
   reducers: {
-    setCategoryFilter(state, action) {
-      state.categoryFilter = action.payload;
+    setConditionFilter(state, action) {
+      state.conditionFilter = action.payload;
+
       state.filteredProducts = state.products
         .filter((p) =>
           state.categoryFilter
@@ -157,11 +169,23 @@ const productSlice = createSlice({
         .filter((p) =>
           state.searchQuery
             ? p.title.toLowerCase().includes(state.searchQuery.toLowerCase())
+            : true
+        )
+        .filter((p) =>
+          state.brandFilter
+            ? p.brand?.toLowerCase() === state.brandFilter.toLowerCase()
+            : true
+        )
+        .filter((p) =>
+          state.conditionFilter
+            ? p.condition?.toLowerCase() === state.conditionFilter.toLowerCase()
             : true
         );
     },
-    setSearchQuery(state, action) {
-      state.searchQuery = action.payload;
+
+    setBrandFilter(state, action) {
+      state.brandFilter = action.payload;
+
       state.filteredProducts = state.products
         .filter((p) =>
           state.categoryFilter
@@ -171,6 +195,68 @@ const productSlice = createSlice({
         .filter((p) =>
           state.searchQuery
             ? p.title.toLowerCase().includes(state.searchQuery.toLowerCase())
+            : true
+        )
+        .filter((p) =>
+          state.brandFilter
+            ? p.brand?.toLowerCase() === state.brandFilter.toLowerCase()
+            : true
+        )
+        .filter((p) =>
+          state.conditionFilter
+            ? p.condition?.toLowerCase() === state.conditionFilter.toLowerCase()
+            : true
+        );
+    },
+
+    setCategoryFilter(state, action) {
+      state.categoryFilter = action.payload;
+
+      state.filteredProducts = state.products
+        .filter((p) =>
+          state.categoryFilter
+            ? p.category.toLowerCase() === state.categoryFilter.toLowerCase()
+            : true
+        )
+        .filter((p) =>
+          state.searchQuery
+            ? p.title.toLowerCase().includes(state.searchQuery.toLowerCase())
+            : true
+        )
+        .filter((p) =>
+          state.brandFilter
+            ? p.brand?.toLowerCase() === state.brandFilter.toLowerCase()
+            : true
+        )
+        .filter((p) =>
+          state.conditionFilter
+            ? p.condition?.toLowerCase() === state.conditionFilter.toLowerCase()
+            : true
+        );
+    },
+
+    setSearchQuery(state, action) {
+      state.searchQuery = action.payload;
+
+      state.filteredProducts = state.products
+        .filter((p) =>
+          state.categoryFilter
+            ? p.category.toLowerCase() === state.categoryFilter.toLowerCase()
+            : true
+        )
+        .filter((p) =>
+          state.searchQuery
+            ? p.title.toLowerCase().includes(state.searchQuery.toLowerCase())
+            : true
+        )
+        .filter((p) =>
+          state.brandFilter
+            ? p.brand?.toLowerCase() === state.brandFilter.toLowerCase()
+            : true
+        )
+        .filter((p) =>
+          state.conditionFilter
+            ? p.condition?.toLowerCase() === state.conditionFilter.toLowerCase()
             : true
         );
     },
@@ -256,5 +342,10 @@ const productSlice = createSlice({
     });
   },
 });
-export const { setCategoryFilter, setSearchQuery } = productSlice.actions;
+export const {
+  setCategoryFilter,
+  setSearchQuery,
+  setBrandFilter,
+  setConditionFilter,
+} = productSlice.actions;
 export default productSlice.reducer;

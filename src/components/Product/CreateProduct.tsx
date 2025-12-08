@@ -29,6 +29,8 @@ const CreateProduct: React.FC = () => {
   const [discountPrice, setDiscountPrice] = useState("");
   const [stockInCount, setStockInCount] = useState("");
   const [category, setCategory] = useState("");
+  const [brand, setBrand] = useState("");
+  const [condition, setCondition] = useState("BRAND_NEW");
   const [status, setStatus] = useState("onsale");
   const [quickSale, setQuickSale] = useState(false);
   const [whatsappNumber, setWhatsappNumber] = useState(
@@ -46,38 +48,38 @@ const CreateProduct: React.FC = () => {
     setPreview(files.map((file) => URL.createObjectURL(file)));
   };
 
-// PRODUCT SUBMISSION
-const handleSubmit = (e: React.FormEvent) => {
-  e.preventDefault();
+  // PRODUCT SUBMISSION
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
 
-  if (!whatsappNumber.trim()) {
-    alert("Please add your WhatsApp number before proceeding.");
-    return;
-  }
+    if (!whatsappNumber.trim()) {
+      alert("Please add your WhatsApp number before proceeding.");
+      return;
+    }
 
-  const fd = new FormData();
-  fd.append("title", title);
-  fd.append("description", description);
-  fd.append("price", price);
-  fd.append("discountPrice", discountPrice);
-  fd.append("stockInCount", stockInCount);
-  fd.append("status", status);
-  fd.append("quickSale", quickSale.toString());
-  fd.append("category", category);
-  fd.append("whatsappNumber", whatsappNumber);
+    const fd = new FormData();
+    fd.append("title", title);
+    fd.append("description", description);
+    fd.append("price", price);
+    fd.append("discountPrice", discountPrice);
+    fd.append("stockInCount", stockInCount);
+    fd.append("status", status);
+    fd.append("quickSale", quickSale.toString());
+    fd.append("category", category);
+    fd.append("brand", brand);
+    fd.append("condition", condition);
+    fd.append("whatsappNumber", whatsappNumber);
 
-  images.forEach((img) => fd.append("images", img));
+    images.forEach((img) => fd.append("images", img));
 
-  setTempProductData(fd);
-
-  // Only prompt payment for non-admins
-  if (!isAdmin && !paymentDone) {
-    setFormLocked(true);
-    setShowPayment(true);
-    return;
-  }
-  processProductCreation(fd);
-};
+    setTempProductData(fd);
+    if (!isAdmin && !paymentDone) {
+      setFormLocked(true);
+      setShowPayment(true);
+      return;
+    }
+    processProductCreation(fd);
+  };
 
   const processProductCreation = async (formData: FormData) => {
     const result = await dispatch(createProduct(formData));
@@ -88,20 +90,18 @@ const handleSubmit = (e: React.FormEvent) => {
     setFormLocked(false);
   };
 
-useEffect(() => {
-  if (!tempProductData) return;
+  useEffect(() => {
+    if (!tempProductData) return;
 
-  const discount = Number(tempProductData.get("discountPrice"));
-  const price = Number(tempProductData.get("price"));
+    const discount = Number(tempProductData.get("discountPrice"));
+    const price = Number(tempProductData.get("price"));
 
-  const basePrice = discount || price;
+    const basePrice = discount || price;
 
-  const fee = Math.max(1, Math.ceil(basePrice * 0.01));
+    const fee = Math.max(1, Math.ceil(basePrice * 0.01));
 
-  dispatch(setFee({ basePrice, fee }));
-}, [dispatch, tempProductData]);
-
-
+    dispatch(setFee({ basePrice, fee }));
+  }, [dispatch, tempProductData]);
 
   return (
     <div className="min-h-screen bg-gray-100 px-4 py-8">
@@ -147,6 +147,10 @@ useEffect(() => {
       {/* FORM */}
       <div className="max-w-2xl mx-auto bg-white p-8 rounded-2xl shadow">
         <h2 className="text-3xl font-bold text-center mb-6">Create Product</h2>
+        <p className="text-green-600 font-bold text-lg">
+          Please ensure you post products related to the categories given to
+          avoid removal of your product from our listing
+        </p>
 
         {message && (
           <p className="text-green-600 bg-green-100 p-2 rounded text-center">
@@ -229,19 +233,66 @@ useEffect(() => {
             <span>Quick Sale</span>
           </label>
 
+          {/* CATEGORY SELECT */}
+          <div>
+            <label className="block text-gray-700 font-medium mb-1">
+              Category
+            </label>
+            <select
+              value={category}
+              onChange={(e) => {
+                setCategory(e.target.value);
+                setBrand(""); // reset brand when category changes
+              }}
+              required
+              disabled={formLocked} // for CreateProduct
+              className="w-full border p-3 rounded"
+            >
+              <option value="">Choose Category</option>
+              {categories.map((cat) => (
+                <option key={cat.name} value={cat.name}>
+                  {cat.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* BRAND SELECT */}
+          <div>
+            <label className="block text-gray-700 font-medium mb-1">
+              Brand
+            </label>
+            <select
+              value={brand}
+              onChange={(e) => setBrand(e.target.value)}
+              required
+              disabled={formLocked || !category} // disable if no category
+              className="w-full border p-3 rounded"
+            >
+              <option value="">Choose Brand</option>
+              {category &&
+                categories
+                  .find((c) => c.name === category)
+                  ?.brands.map((bnd) => (
+                    <option key={bnd} value={bnd}>
+                      {bnd}
+                    </option>
+                  ))}
+            </select>
+          </div>
+
           <select
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
+            name="condition"
+            value={condition}
+            onChange={(e) => setCondition(e.target.value)}
             required
             disabled={formLocked}
             className="w-full border p-3 rounded"
           >
-            <option value="">Choose Category</option>
-            {categories.map((cat) => (
-              <option key={cat} value={cat}>
-                {cat}
-              </option>
-            ))}
+            <option value="">Choose Product Condition</option>
+            <option value="BRAND_NEW">Brand New</option>
+            <option value="SLIGHTLY_USED">Slightly Used</option>
+            <option value="REFURBISHED">Refurbished</option>
           </select>
 
           <input

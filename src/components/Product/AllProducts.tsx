@@ -56,9 +56,9 @@ const AllProducts: React.FC = () => {
         <div className="flex justify-end mb-10">
           <Link
             to="/create"
-            className="px-5 py-2 bg-indigo-600 text-white rounded-lg shadow-md hover:bg-indigo-700 transition"
+            className="px-5 py-2 bg-indigo-500 text-white rounded-lg shadow-md hover:bg-indigo-700 transition"
           >
-            + Sell Something
+            Sell
           </Link>
         </div>
 
@@ -148,6 +148,27 @@ const AllProducts: React.FC = () => {
                         </span>
                       )}
                     </div>
+
+                    {/* CONDITION BADGE */}
+                    {product.condition && (
+                      <span
+                        className={`
+      inline-block mt-3 px-3 py-1 rounded-full text-xs font-semibold shadow-md 
+      ${
+        product.condition === "BRAND_NEW"
+          ? "bg-green-100 text-green-700"
+          : product.condition === "USED"
+          ? "bg-yellow-100 text-yellow-700"
+          : product.condition === "REFURBISHED"
+          ? "bg-blue-100 text-blue-700"
+          : "bg-gray-200 text-gray-700"
+      }
+    `}
+                      >
+                        {product.condition.replace("_", " ")}
+                      </span>
+                    )}
+
                     <p className="mt-3 text-gray-800 text-lg">
                       <span className="font-semibold">Stock:</span>{" "}
                       {product.stockInCount > 0 ? (
@@ -168,7 +189,7 @@ const AllProducts: React.FC = () => {
                     <div className="absolute top-3 right-3 z-20">
                       <button
                         onClick={(e) => {
-                          e.preventDefault(); 
+                          e.preventDefault();
                           const isFav = favourites.some(
                             (fav) => fav.productId === product.id
                           );
@@ -178,7 +199,7 @@ const AllProducts: React.FC = () => {
                             dispatch(addFavourite(product.id));
                           }
                         }}
-                        className="p-2 rounded-full bg-white shadow-md hover:bg-gray-100 transition"
+                        className="p-2 hover:text-white transition"
                       >
                         <Heart
                           size={24}
@@ -187,7 +208,7 @@ const AllProducts: React.FC = () => {
                               (fav) => fav.productId === product.id
                             )
                               ? "fill-red-500 text-red-500"
-                              : "text-gray-500"
+                              : "text-gray-300"
                           }`}
                         />
                       </button>
