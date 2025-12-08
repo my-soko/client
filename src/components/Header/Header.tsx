@@ -70,12 +70,17 @@ const Header: React.FC = () => {
           </select>
         </div>
         {/* Favourites Heart Button */}
+        {/* MOBILE FAVOURITES */}
         {user && (
-          <Link to="/favourites" className="relative">
-            <Heart className="w-7 h-7 text-gray-600 hover:text-red-500" />
-
+          <Link
+            to="/favourites"
+            onClick={() => setOpen(false)}
+            className="flex items-center gap-3 text-gray-700 hover:text-red-500"
+          >
+            <Heart className="w-6 h-6" />
+            Favourites
             {favourites.length > 0 && (
-              <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full">
+              <span className="ml-auto bg-red-600 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full">
                 {favourites.length}
               </span>
             )}

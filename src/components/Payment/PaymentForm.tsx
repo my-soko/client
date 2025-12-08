@@ -17,7 +17,7 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
   onSuccess,
 }) => {
   const dispatch = useDispatch<AppDispatch>();
-  const { loading, error, paymentData } = useSelector(
+  const { loading, paymentData } = useSelector(
     (state: RootState) => state.payment
   );
 
@@ -27,6 +27,12 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
   const [waiting, setWaiting] = useState(false);
   const [countdown, setCountdown] = useState(60);
   const [paymentComplete, setPaymentComplete] = useState(false);
+
+  const basePrice = Number(productData.get("discountPrice")) 
+  || Number(productData.get("price"));
+
+const fee = Math.max(1, Math.ceil(basePrice * 0.01));
+
 
   const handlePayment = async (e: FormEvent) => {
     e.preventDefault();
@@ -51,9 +57,6 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
     }, 1000);
     return () => clearInterval(timer);
   }, [waiting]);
-
-  // Polling payment status
-  // Polling payment status every 4 seconds
   useEffect(() => {
     if (!waiting || !paymentData?.checkoutRequestId) return;
 
@@ -87,48 +90,78 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
   }, [waiting, paymentData, dispatch, onSuccess]);
 
   return (
-    <div className="w-full">
-      <h2 className="text-xl font-bold mb-4 text-center">Complete Payment</h2>
+   <div className="bg-white p-6 rounded-xl shadow-md border border-gray-100">
+  <h2 className="text-2xl font-bold text-center text-green-700 mb-3">
+    M-Pesa Payment
+  </h2>
 
-      {error && <p className="text-red-500 text-center mb-3">{error}</p>}
+  <p className="text-center text-gray-600 mb-4">
+    Confirm the details below to continue.
+  </p>
 
-      {!waiting && !paymentComplete && (
-        <form onSubmit={handlePayment} className="space-y-3">
-          <input
-            type="text"
-            placeholder="07XXXXXXXX"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            className="w-full border p-2 rounded outline-none"
-            required
-          />
-          <button
-            type="submit"
-            disabled={loading}
-            className={`w-full p-2 rounded text-white ${
-              loading ? "bg-gray-500" : "bg-green-600 hover:bg-green-700"
-            }`}
-          >
-            {loading ? "Processing..." : "Pay 1 KES"}
-          </button>
-        </form>
-      )}
-
-      {waiting && !paymentComplete && (
-        <div className="mt-4 text-center">
-          <p className="text-blue-600 font-semibold">
-            Waiting for M-Pesa payment... ⏳
-          </p>
-          <p className="text-gray-600">Time left: {countdown}s</p>
-        </div>
-      )}
-
-      {paymentComplete && (
-        <p className="mt-3 text-green-600 text-center font-bold">
-          Payment successful! 🎉
-        </p>
-      )}
+  <div className="bg-gray-50 p-4 rounded-lg border mb-4">
+    <div className="flex justify-between mb-1">
+      <span className="text-gray-600">Posting Fee (1%)</span>
+      <span className="font-semibold">{fee} KES</span>
     </div>
+
+    <div className="flex justify-between">
+      <span className="text-gray-600">Product Price</span>
+      <span className="font-semibold">{basePrice} KES</span>
+    </div>
+
+    <hr className="my-2" />
+
+    <div className="flex justify-between text-lg font-bold">
+      <span>Total</span>
+      <span>{fee} KES</span>
+    </div>
+  </div>
+
+  {!waiting && !paymentComplete && (
+    <form onSubmit={handlePayment} className="space-y-3">
+
+      <label className="text-sm font-semibold text-gray-700">
+        M-Pesa Phone Number
+      </label>
+      <input
+        type="text"
+        placeholder="07XXXXXXXX"
+        value={phone}
+        onChange={(e) => setPhone(e.target.value)}
+        className="w-full border p-3 rounded-lg outline-none focus:border-green-500"
+        required
+      />
+
+      <button
+        type="submit"
+        disabled={loading}
+        className="w-full bg-green-600 hover:bg-green-700 p-3 rounded-lg text-white font-semibold shadow-md"
+      >
+        {loading ? "Processing..." : `Pay ${fee} KES via M-Pesa`}
+      </button>
+    </form>
+  )}
+
+  {waiting && !paymentComplete && (
+    <div className="mt-4 text-center">
+      <div className="animate-pulse text-green-700 font-semibold">
+        Waiting for M-Pesa STK Push…
+      </div>
+      <p className="text-gray-500">Please check your phone</p>
+      <p className="font-semibold mt-1">Time left: {countdown}s</p>
+    </div>
+  )}
+
+  {paymentComplete && (
+    <div className="text-center mt-4">
+      <p className="text-green-600 font-bold text-lg">
+        Payment Successful! 🎉
+      </p>
+    </div>
+  )}
+</div>
+
   );
 };
 

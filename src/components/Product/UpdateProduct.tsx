@@ -56,9 +56,9 @@ const UpdateProduct: React.FC = () => {
     const formData = new FormData();
     formData.append("title", title);
     formData.append("description", description);
-    formData.append("price", price);
+    // formData.append("price", price);
     formData.append("category", category);
-    formData.append("discountPrice", discountPrice);
+    // formData.append("discountPrice", discountPrice);
     formData.append("stockInCount", stockInCount);
 
     // NEW FIELDS
@@ -149,6 +149,7 @@ const UpdateProduct: React.FC = () => {
               value={price}
               onChange={(e) => setPrice(e.target.value)}
               placeholder="Price in KSH"
+              disabled
               type="number"
               className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
             />
@@ -162,6 +163,7 @@ const UpdateProduct: React.FC = () => {
               value={discountPrice}
               onChange={(e) => setDiscountPrice(e.target.value)}
               placeholder="Discount Price"
+              disabled
               type="number"
               className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2
       focus:ring-indigo-500 focus:border-indigo-500 transition"
