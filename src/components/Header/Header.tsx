@@ -5,27 +5,31 @@ import type { AppDispatch, RootState } from "../../redux/store";
 
 import { logoutUser } from "../../redux/reducers/authReducer";
 import { categories } from "../../util/Category";
-
 import {
   setBrandFilter,
   setCategoryFilter,
   setSearchQuery,
   setConditionFilter,
+  setMinPrice,
+  setMaxPrice,
+  setSortBy,
+  clearAllFilters,
 } from "../../redux/reducers/productReducer";
 
-import { Menu, X, User, Heart } from "lucide-react";
-import {
-  fetchFavourites,
-  selectFavourites,
-} from "../../redux/reducers/favouriteSlice";
+import { Menu, X, User, Heart, DollarSign } from "lucide-react";
+import { fetchFavourites, selectFavourites } from "../../redux/reducers/favouriteSlice";
 
 const Header: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
   const user = useSelector((state: RootState) => state.auth.user);
   const favourites = useSelector(selectFavourites);
-  const categoryFilter = useSelector(
-    (state: RootState) => state.product.categoryFilter
-  );
+  const {
+    categoryFilter,
+    filteredProducts,
+    minPrice,
+    maxPrice,
+    sortBy,
+  } = useSelector((state: RootState) => state.product);
 
   const [open, setOpen] = useState(false);
 
@@ -33,82 +37,69 @@ const Header: React.FC = () => {
     if (user) dispatch(fetchFavourites());
   }, [dispatch, user]);
 
+  // Product stats
+  const totalProducts = filteredProducts.length;
+  const brandNewCount = filteredProducts.filter(p => p.condition === "BRAND_NEW").length;
+  const slightlyUsedCount = filteredProducts.filter(p => p.condition === "SLIGHTLY_USED").length;
+  const refurbishedCount = filteredProducts.filter(p => p.condition === "REFURBISHED").length;
+
   const handleLogout = () => {
     dispatch(logoutUser());
     setOpen(false);
   };
 
   return (
-    <header className="bg-white shadow-md p-4 sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
-        
-        {/* LOGO */}
+    <header className="bg-white shadow-md sticky top-0 z-50">
+      {/* TOP HEADER */}
+      <div className="max-w-7xl mx-auto flex items-center justify-between gap-4 p-4">
+        {/* Logo */}
         <Link
           to="/"
           className="text-2xl font-bold text-indigo-600"
           onClick={() => {
-            dispatch(setCategoryFilter(""));
-            dispatch(setSearchQuery(""));
-            dispatch(setBrandFilter(""));
-            dispatch(setConditionFilter(""));
+            dispatch(clearAllFilters());
             setOpen(false);
           }}
         >
           MySoko
         </Link>
 
-        {/* DESKTOP FILTER BAR */}
-        <div className="hidden md:flex items-center gap-4 flex-1">
-          <input
-            type="text"
-            placeholder="Search products..."
-            className="flex-1 border rounded-lg p-2 focus:ring-2 focus:ring-indigo-500"
-            onChange={(e) => dispatch(setSearchQuery(e.target.value))}
-          />
+  
+<div className="hidden md:flex flex-1 gap-2 items-center">
+  <input
+    type="text"
+    placeholder="Search products..."
+    className="flex-1 border rounded-lg p-2 focus:ring-2 focus:ring-indigo-500"
+    onChange={(e) => dispatch(setSearchQuery(e.target.value))}
+  />
 
-          {/* CATEGORY */}
-          <select
-            className="flex-1 border rounded-lg p-2 focus:ring-2 focus:ring-indigo-500"
-            onChange={(e) => dispatch(setCategoryFilter(e.target.value))}
-          >
-            <option value="">Category</option>
-            {categories.map((cat) => (
-              <option key={cat.name} value={cat.name}>
-                {cat.name}
-              </option>
-            ))}
-          </select>
+  <select
+    className="flex-1 border rounded-lg p-2 focus:ring-2 focus:ring-indigo-500"
+    onChange={(e) => dispatch(setCategoryFilter(e.target.value))}
+  >
+    <option value="">Category</option>
+    {categories.map((cat) => (
+      <option key={cat.name} value={cat.name}>{cat.name}</option>
+    ))}
+  </select>
 
-          {/* BRAND */}
-          <select
-            className="flex-1 border rounded-lg p-2 focus:ring-2 focus:ring-indigo-500"
-            onChange={(e) => dispatch(setBrandFilter(e.target.value))}
-          >
-            <option value="">Brand</option>
-            {categories.map((cat) =>
-              cat.name === categoryFilter
-                ? cat.brands.map((brand) => (
-                    <option key={brand} value={brand}>
-                      {brand}
-                    </option>
-                  ))
-                : null
-            )}
-          </select>
+  <select
+    className="flex-1 border rounded-lg p-2 focus:ring-2 focus:ring-indigo-500"
+    onChange={(e) => dispatch(setBrandFilter(e.target.value))}
+  >
+    <option value="">Brand</option>
+    {categories.map((cat) =>
+      cat.name === categoryFilter
+        ? cat.brands.map((brand) => (
+            <option key={brand} value={brand}>{brand}</option>
+          ))
+        : null
+    )}
+  </select>
+</div>
 
-          {/* CONDITION */}
-          <select
-            className="flex-1 border rounded-lg p-2 focus:ring-2 focus:ring-indigo-500"
-            onChange={(e) => dispatch(setConditionFilter(e.target.value))}
-          >
-            <option value="">Condition</option>
-            <option value="BRAND_NEW">Brand New</option>
-            <option value="SLIGHTLY_USED">Slightly Used</option>
-            <option value="REFURBISHED">Refurbished</option>
-          </select>
-        </div>
 
-        {/* FAVOURITES */}
+        {/* Favourites */}
         {user && (
           <Link
             to="/favourites"
@@ -121,7 +112,7 @@ const Header: React.FC = () => {
                 {favourites.length}
               </span>
             )}
-            Favourite
+            Favourites
           </Link>
         )}
 
@@ -156,10 +147,75 @@ const Header: React.FC = () => {
         </button>
       </div>
 
+      {/* DESKTOP SUBHEADER: SORT, PRICE, STATS */}
+     {/* DESKTOP SUBHEADER: SORT, PRICE, STATS */}
+<div className="bg-gray-50 border-t border-b p-4 hidden md:flex items-center justify-between flex-wrap gap-4 max-w-7xl mx-auto">
+  {/* Filters */}
+  <div className="flex items-center gap-3 flex-wrap">
+    {/* Sort */}
+    <div className="flex items-center gap-2 bg-white rounded-lg p-2 shadow-sm hover:shadow-md transition">
+      <span className="text-gray-600 font-semibold">Sort:</span>
+      <select
+        className="border-none outline-none focus:ring-0 bg-transparent"
+        value={sortBy}
+        onChange={(e) => dispatch(setSortBy(e.target.value))}
+      >
+        <option value="">Default</option>
+        <option value="latest">Latest</option>
+        <option value="price_low_high">Price: Low → High</option>
+        <option value="price_high_low">Price: High → Low</option>
+      </select>
+    </div>
+
+    {/* Price */}
+    <div className="flex items-center gap-2 bg-white rounded-lg p-2 shadow-sm hover:shadow-md transition">
+      <DollarSign className="w-5 h-5 text-indigo-500" />
+      <input
+        type="number"
+        placeholder="Min"
+        className="w-20 border border-gray-200 rounded-lg p-1 focus:ring-2 focus:ring-indigo-500"
+        value={minPrice || ""}
+        onChange={(e) => dispatch(setMinPrice(Number(e.target.value)))}
+      />
+      <input
+        type="number"
+        placeholder="Max"
+        className="w-20 border border-gray-200 rounded-lg p-1 focus:ring-2 focus:ring-indigo-500"
+        value={maxPrice || ""}
+        onChange={(e) => dispatch(setMaxPrice(Number(e.target.value)))}
+      />
+    </div>
+
+    {/* Condition Chips */}
+    {["BRAND_NEW", "SLIGHTLY_USED", "REFURBISHED"].map((cond) => (
+      <button
+        key={cond}
+        onClick={() => dispatch(setConditionFilter(cond))}
+        className={`px-3 py-1 rounded-full text-sm font-medium transition ${
+          filteredProducts.some(p => p.condition === cond)
+            ? "bg-indigo-500 text-white shadow-md"
+            : "bg-gray-200 text-gray-700 hover:bg-indigo-100"
+        }`}
+      >
+        {cond.replace("_", " ")}
+      </button>
+    ))}
+  </div>
+
+  {/* Product Stats */}
+  <div className="flex items-center gap-4 flex-wrap text-gray-700">
+    <span className="text-sm font-medium">Listed: {totalProducts}</span>
+    <span className="text-sm font-medium">Brand New: {brandNewCount}</span>
+    <span className="text-sm font-medium">Slightly Used: {slightlyUsedCount}</span>
+    <span className="text-sm font-medium">Refurbished: {refurbishedCount}</span>
+  </div>
+</div>
+
+
       {/* MOBILE MENU */}
       {open && (
-        <div className="md:hidden mt-4 bg-white shadow-lg rounded-lg p-4 space-y-4">
-
+        <div className="md:hidden bg-white shadow-lg rounded-b-lg p-4 space-y-4">
+          {/* SEARCH */}
           <input
             type="text"
             placeholder="Search products..."
@@ -174,9 +230,7 @@ const Header: React.FC = () => {
           >
             <option value="">Category</option>
             {categories.map((cat) => (
-              <option key={cat.name} value={cat.name}>
-                {cat.name}
-              </option>
+              <option key={cat.name} value={cat.name}>{cat.name}</option>
             ))}
           </select>
 
@@ -189,9 +243,7 @@ const Header: React.FC = () => {
             {categories.map((cat) =>
               cat.name === categoryFilter
                 ? cat.brands.map((brand) => (
-                    <option key={brand} value={brand}>
-                      {brand}
-                    </option>
+                    <option key={brand} value={brand}>{brand}</option>
                   ))
                 : null
             )}
@@ -208,41 +260,55 @@ const Header: React.FC = () => {
             <option value="REFURBISHED">Refurbished</option>
           </select>
 
-          {/* NAV LINKS */}
-          <nav className="flex flex-col gap-3 text-lg">
-            <Link
-              to="/"
-              onClick={() => setOpen(false)}
-              className="hover:text-indigo-600"
-            >
-              Home
-            </Link>
-            <Link
-              to="/products"
-              onClick={() => setOpen(false)}
-              className="hover:text-indigo-600"
-            >
-              Products
-            </Link>
+          {/* PRICE FILTER */}
+          <div className="flex items-center gap-2 mt-2">
+            <DollarSign className="w-5 h-5 text-gray-500" />
+            <input
+              type="number"
+              placeholder="Min"
+              className="w-1/2 border rounded-lg p-2 focus:ring-2 focus:ring-indigo-500"
+              value={minPrice || ""}
+              onChange={(e) => dispatch(setMinPrice(Number(e.target.value)))}
+            />
+            <input
+              type="number"
+              placeholder="Max"
+              className="w-1/2 border rounded-lg p-2 focus:ring-2 focus:ring-indigo-500"
+              value={maxPrice || ""}
+              onChange={(e) => dispatch(setMaxPrice(Number(e.target.value)))}
+            />
+          </div>
 
-            {user && (
-              <Link
-                to="/favourites"
-                onClick={() => setOpen(false)}
-                className="flex items-center gap-2 hover:text-red-500"
-              >
-                <Heart className="w-6 h-6" />
-                Favourites
-                {favourites.length > 0 && (
-                  <span className="bg-red-600 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full">
-                    {favourites.length}
-                  </span>
-                )}
-              </Link>
-            )}
-          </nav>
+          {/* SORT */}
+          <select
+            className="w-full border rounded-lg p-2 mt-2"
+            value={sortBy}
+            onChange={(e) => dispatch(setSortBy(e.target.value))}
+          >
+            <option value="">Sort By</option>
+            <option value="latest">Latest</option>
+            <option value="price_low_high">Price: Low → High</option>
+            <option value="price_high_low">Price: High → Low</option>
+          </select>
 
-          {/* MOBILE AUTH */}
+          {/* FAVOURITES */}
+          {user && (
+            <Link
+              to="/favourites"
+              onClick={() => setOpen(false)}
+              className="flex items-center gap-2 hover:text-red-500"
+            >
+              <Heart className="w-6 h-6" />
+              Favourites
+              {favourites.length > 0 && (
+                <span className="bg-red-600 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full">
+                  {favourites.length}
+                </span>
+              )}
+            </Link>
+          )}
+
+          {/* AUTH */}
           <div className="pt-4 border-t">
             {user ? (
               <div className="flex items-center justify-between">
@@ -269,6 +335,14 @@ const Header: React.FC = () => {
                 <User className="w-6 h-6" /> Login
               </Link>
             )}
+          </div>
+
+          {/* PRODUCT STATS */}
+          <div className="flex items-center gap-4 mt-4 text-gray-700 flex-wrap">
+            <span>Listed: {totalProducts}</span>
+            <span>Brand New: {brandNewCount}</span>
+            <span>Slightly Used: {slightlyUsedCount}</span>
+            <span>Refurbished: {refurbishedCount}</span>
           </div>
         </div>
       )}

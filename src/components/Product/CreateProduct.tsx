@@ -30,7 +30,7 @@ const CreateProduct: React.FC = () => {
   const [stockInCount, setStockInCount] = useState("");
   const [category, setCategory] = useState("");
   const [brand, setBrand] = useState("");
-  const [condition, setCondition] = useState("BRAND_NEW");
+  const [condition, setCondition] = useState("");
   const [status, setStatus] = useState("onsale");
   const [quickSale, setQuickSale] = useState(false);
   const [whatsappNumber, setWhatsappNumber] = useState(

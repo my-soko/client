@@ -24,6 +24,7 @@ export interface Product {
   imageUrl: string;
   images: string[];
   sellerId: string;
+  stockTotal: number;
   seller: Seller;
   averageRating?: number;
   totalReviews?: number;
@@ -35,9 +36,12 @@ interface ErrorResponse {
 }
 
 interface ProductState {
+ minPrice: number | null;
+maxPrice: number | null;
+sortBy: "latest" | "price_low_high" | "price_high_low" | "";
+filteredProducts: Product[];
   products: Product[];
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  filteredProducts: any[];
+clearFilter: boolean;
   currentProduct: Product | null;
   loading: boolean;
   error: string | null;
@@ -60,6 +64,10 @@ const initialState: ProductState = {
   searchQuery: "",
   brandFilter: "",
   conditionFilter: "",
+  minPrice: null,
+  maxPrice: null,
+  sortBy: "",
+  clearFilter: false
 };
 
 // ----------------------------
@@ -157,6 +165,113 @@ const productSlice = createSlice({
   name: "product",
   initialState,
   reducers: {
+
+    clearAllFilters(state) {
+  state.categoryFilter = "";
+  state.searchQuery = "";
+  state.brandFilter = "";
+  state.conditionFilter = "";
+  state.minPrice = null;
+  state.maxPrice = null;
+  state.sortBy = "";
+  state.clearFilter = true;
+
+  // Reset filtered products to all products
+  state.filteredProducts = state.products;
+}
+,
+    setMinPrice(state, action) {
+  state.minPrice = action.payload;
+
+  state.filteredProducts = state.products.filter((p) => {
+    const meetsCategory = state.categoryFilter
+      ? p.category.toLowerCase() === state.categoryFilter.toLowerCase()
+      : true;
+
+    const meetsSearch = state.searchQuery
+      ? p.title.toLowerCase().includes(state.searchQuery.toLowerCase())
+      : true;
+
+    const meetsBrand = state.brandFilter
+      ? p.brand?.toLowerCase() === state.brandFilter.toLowerCase()
+      : true;
+
+    const meetsCondition = state.conditionFilter
+      ? p.condition?.toLowerCase() === state.conditionFilter.toLowerCase()
+      : true;
+
+    const meetsMin = state.minPrice ? p.price >= state.minPrice : true;
+
+    const meetsMax = state.maxPrice ? p.price <= state.maxPrice : true;
+
+    return (
+      meetsCategory &&
+      meetsSearch &&
+      meetsBrand &&
+      meetsCondition &&
+      meetsMin &&
+      meetsMax
+    );
+  });
+},
+
+setMaxPrice(state, action) {
+  state.maxPrice = action.payload;
+
+  state.filteredProducts = state.products.filter((p) => {
+    const meetsCategory = state.categoryFilter
+      ? p.category.toLowerCase() === state.categoryFilter.toLowerCase()
+      : true;
+
+    const meetsSearch = state.searchQuery
+      ? p.title.toLowerCase().includes(state.searchQuery.toLowerCase())
+      : true;
+
+    const meetsBrand = state.brandFilter
+      ? p.brand?.toLowerCase() === state.brandFilter.toLowerCase()
+      : true;
+
+    const meetsCondition = state.conditionFilter
+      ? p.condition?.toLowerCase() === state.conditionFilter.toLowerCase()
+      : true;
+
+    const meetsMin = state.minPrice ? p.price >= state.minPrice : true;
+
+    const meetsMax = state.maxPrice ? p.price <= state.maxPrice : true;
+
+    return (
+      meetsCategory &&
+      meetsSearch &&
+      meetsBrand &&
+      meetsCondition &&
+      meetsMin &&
+      meetsMax
+    );
+  });
+},
+
+setSortBy(state, action) {
+  state.sortBy = action.payload;
+
+  if (action.payload === "latest") {
+    state.filteredProducts = [...state.filteredProducts].sort(
+      (a, b) => Number(b.id) - Number(a.id)
+    );
+  }
+
+  if (action.payload === "price_low_high") {
+    state.filteredProducts = [...state.filteredProducts].sort(
+      (a, b) => a.price - b.price
+    );
+  }
+
+  if (action.payload === "price_high_low") {
+    state.filteredProducts = [...state.filteredProducts].sort(
+      (a, b) => b.price - a.price
+    );
+  }
+},
+
     setConditionFilter(state, action) {
       state.conditionFilter = action.payload;
 
@@ -347,5 +462,9 @@ export const {
   setSearchQuery,
   setBrandFilter,
   setConditionFilter,
+  setMinPrice,
+  setMaxPrice,
+  setSortBy,
+  clearAllFilters,
 } = productSlice.actions;
 export default productSlice.reducer;

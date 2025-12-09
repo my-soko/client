@@ -157,7 +157,7 @@ const AllProducts: React.FC = () => {
       ${
         product.condition === "BRAND_NEW"
           ? "bg-green-100 text-green-700"
-          : product.condition === "USED"
+          : product.condition === "SLIGHTLY_USED"
           ? "bg-yellow-100 text-yellow-700"
           : product.condition === "REFURBISHED"
           ? "bg-blue-100 text-blue-700"
@@ -181,6 +181,25 @@ const AllProducts: React.FC = () => {
                         </span>
                       )}
                     </p>
+                    <div className="w-full bg-gray-200 rounded-full h-2 mt-1 overflow-hidden">
+  {product.stockTotal && product.stockInCount >= 0 && (
+  <div className="w-full bg-gray-200 rounded-full h-2 mt-1 overflow-hidden">
+    <div
+      className={`h-2 rounded-full transition-all duration-500 ${
+        product.stockInCount / product.stockTotal > 0.5
+          ? "bg-green-500"
+          : product.stockInCount / product.stockTotal > 0.2
+          ? "bg-yellow-400"
+          : "bg-red-500"
+      }`}
+      style={{
+        width: `${(product.stockInCount / product.stockTotal) * 100}%`,
+      }}
+    ></div>
+  </div>
+)}
+
+</div>
                   </div>
                 </Link>
 

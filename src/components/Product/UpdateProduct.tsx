@@ -63,6 +63,7 @@ const UpdateProduct: React.FC = () => {
     formData.append("category", category);
     formData.append("brand", brand);
     formData.append("condition", condition);
+
     // formData.append("discountPrice", discountPrice);
     formData.append("stockInCount", stockInCount);
 
