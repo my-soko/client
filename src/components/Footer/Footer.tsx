@@ -1,10 +1,9 @@
 import React from "react";
-import { Link } from "react-router-dom";
 
 const Footer: React.FC = () => {
   return (
     <footer className="bg-gray-900 text-gray-300 pt-10 mt-20">
-      <div className="max-w-8xl mx-auto px-4 grid grid-cols-1 md:grid-cols-4 gap-10">
+      <div className="max-w-8xl mx-auto px-4 grid grid-cols-1 md:grid-cols-3 gap-10">
 
         {/* LOGO & DESCRIPTION */}
         <div>
@@ -26,23 +25,11 @@ const Footer: React.FC = () => {
           </p>
         </div>
 
-        {/* QUICK LINKS */}
         <div>
-          <h3 className="font-semibold text-white mb-2">Navigation</h3>
+          <h3 className="font-semibold text-white mb-2">Support Contacts</h3>
           <ul className="space-y-1">
-            <li><Link to="/" className="hover:text-white">Home</Link></li>
-            <li><Link to="/create" className="hover:text-white">Sell Product</Link></li>
-            <li><Link to="/profile" className="hover:text-white">Profile</Link></li>
-          </ul>
-        </div>
-
-        {/* SOCIAL LINKS */}
-        <div>
-          <h3 className="font-semibold text-white mb-2">Connect</h3>
-          <ul className="space-y-1">
-            <li><a href="#" className="hover:text-white">Facebook</a></li>
-            <li><a href="#" className="hover:text-white">Instagram</a></li>
-            <li><a href="#" className="hover:text-white">WhatsApp</a></li>
+            <li><a href="#" className="hover:text-white">Email: </a> info@mysoko.co.ke</li>
+            <li><a href="#" className="hover:text-white">WhatsApp: </a> +254716570983</li>
           </ul>
         </div>
       </div>
@@ -55,7 +42,7 @@ const Footer: React.FC = () => {
       </div>
 
       <p className="text-center text-sm py-4 text-gray-500">
-        © {new Date().getFullYear()} Marketplace. All rights reserved.
+        © {new Date().getFullYear()} MySoko. All rights reserved.
       </p>
     </footer>
   );

@@ -36,6 +36,7 @@ const UpdateProduct: React.FC = () => {
   const [status, setStatus] = useState(product?.status || "onsale");
   const [quickSale, setQuickSale] = useState(product?.quickSale || false);
 
+
   useEffect(() => {
     if (!product && id) dispatch(fetchProductById(id));
     // eslint-disable-next-line react-hooks/set-state-in-effect

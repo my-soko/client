@@ -29,6 +29,7 @@ const AllProducts: React.FC = () => {
 
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
 
+
   const renderStars = (rating: number) =>
     Array.from({ length: 5 }, (_, i) => (
       <span
@@ -38,6 +39,8 @@ const AllProducts: React.FC = () => {
         ★
       </span>
     ));
+
+    
 
   useEffect(() => {
     dispatch(fetchProducts());
@@ -61,6 +64,8 @@ const AllProducts: React.FC = () => {
             Sell
           </Link>
         </div>
+
+        
 
         {/* PRODUCT GRID */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
@@ -149,7 +154,6 @@ const AllProducts: React.FC = () => {
                       )}
                     </div>
 
-                    {/* CONDITION BADGE */}
                     {product.condition && (
                       <span
                         className={`
@@ -182,24 +186,27 @@ const AllProducts: React.FC = () => {
                       )}
                     </p>
                     <div className="w-full bg-gray-200 rounded-full h-2 mt-1 overflow-hidden">
-  {product.stockTotal && product.stockInCount >= 0 && (
-  <div className="w-full bg-gray-200 rounded-full h-2 mt-1 overflow-hidden">
-    <div
-      className={`h-2 rounded-full transition-all duration-500 ${
-        product.stockInCount / product.stockTotal > 0.5
-          ? "bg-green-500"
-          : product.stockInCount / product.stockTotal > 0.2
-          ? "bg-yellow-400"
-          : "bg-red-500"
-      }`}
-      style={{
-        width: `${(product.stockInCount / product.stockTotal) * 100}%`,
-      }}
-    ></div>
-  </div>
-)}
-
-</div>
+                      {product.stockTotal && product.stockInCount >= 0 && (
+                        <div className="w-full bg-gray-200 rounded-full h-2  overflow-hidden">
+                          <div
+                            className={`h-2 rounded-full transition-all duration-500 ${
+                              product.stockInCount / product.stockTotal > 0.5
+                                ? "bg-green-500"
+                                : product.stockInCount / product.stockTotal >
+                                  0.2
+                                ? "bg-yellow-400"
+                                : "bg-red-500"
+                            }`}
+                            style={{
+                              width: `${
+                                (product.stockInCount / product.stockTotal) *
+                                100
+                              }%`,
+                            }}
+                          ></div>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </Link>
 
@@ -222,7 +229,7 @@ const AllProducts: React.FC = () => {
                       >
                         <Heart
                           size={24}
-                          className={`transition ${
+                          className={`mb-4 transition ${
                             favourites.some(
                               (fav) => fav.productId === product.id
                             )
