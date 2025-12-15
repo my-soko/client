@@ -95,6 +95,10 @@ const fee = Math.max(1, Math.ceil(basePrice * 0.01));
     M-Pesa Payment
   </h2>
 
+  <p className="text-center text-red-600 font-semibold mb-4">
+    ⚠️ Do not close this page until your payment is verified.
+  </p>
+
   <p className="text-center text-gray-600 mb-4">
     Confirm the details below to continue.
   </p>
@@ -122,7 +126,7 @@ const fee = Math.max(1, Math.ceil(basePrice * 0.01));
     <form onSubmit={handlePayment} className="space-y-3">
 
       <label className="text-sm font-semibold text-gray-700">
-        M-Pesa Phone Number
+        M-Pesa Phone Number(07xxxxxxxx)
       </label>
       <input
         type="text"

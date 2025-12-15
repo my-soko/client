@@ -297,7 +297,7 @@ const CreateProduct: React.FC = () => {
 
           <input
             type="text"
-            placeholder="WhatsApp Number"
+            placeholder="WhatsApp  +254..."
             value={whatsappNumber}
             onChange={(e) => setWhatsappNumber(e.target.value)}
             required
@@ -326,6 +326,14 @@ const CreateProduct: React.FC = () => {
                 />
               ))}
             </div>
+          )}
+
+          {/* DISCLAIMER */}
+          {!isAdmin && paymentDone && (
+            <p className="text-red-600 font-semibold text-center mb-3">
+              ⚠️ After completing the payment, click "Create Product" below to
+              post your product.
+            </p>
           )}
 
           <button

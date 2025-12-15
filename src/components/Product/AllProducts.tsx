@@ -29,7 +29,6 @@ const AllProducts: React.FC = () => {
 
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
 
-
   const renderStars = (rating: number) =>
     Array.from({ length: 5 }, (_, i) => (
       <span
@@ -39,8 +38,6 @@ const AllProducts: React.FC = () => {
         ★
       </span>
     ));
-
-    
 
   useEffect(() => {
     dispatch(fetchProducts());
@@ -64,8 +61,6 @@ const AllProducts: React.FC = () => {
             Sell
           </Link>
         </div>
-
-        
 
         {/* PRODUCT GRID */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
@@ -283,7 +278,17 @@ const AllProducts: React.FC = () => {
                           </Link>
 
                           <button
-                            onClick={() => dispatch(deleteProduct(product.id))}
+                            onClick={async () => {
+                              try {
+                                await dispatch(
+                                  deleteProduct(product.id)
+                                ).unwrap();
+                                dispatch(fetchProducts());
+                                setOpenMenuId(null);
+                              } catch (err) {
+                                console.error("Failed to delete product:", err);
+                              }
+                            }}
                             className="block w-full text-left px-4 py-2 text-red-600 hover:bg-gray-100"
                           >
                             🗑 Delete

@@ -76,6 +76,11 @@ const paymentSlice = createSlice({
       state.basePrice = action.payload.basePrice;
       state.fee = action.payload.fee;
     },
+
+    setPaymentData: (state, action: PayloadAction<PaymentData>) => {
+  state.paymentData = action.payload;
+}
+
   },
   extraReducers: (builder) => {
     builder
