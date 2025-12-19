@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from "react";
+// src/components/Header/Header.tsx
+import React, { useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch, RootState } from "../../redux/store";
@@ -16,7 +17,14 @@ import {
   clearAllFilters,
 } from "../../redux/reducers/productReducer";
 
-import { Menu, X, User, Heart, DollarSign } from "lucide-react";
+import {
+  Menu,
+  X,
+  User,
+  Heart,
+  DollarSign,
+} from "lucide-react";
+
 import {
   fetchFavourites,
   selectFavourites,
@@ -24,18 +32,23 @@ import {
 
 const Header: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
-  const user = useSelector((state: RootState) => state.auth.user);
+  const { user } = useSelector((state: RootState) => state.auth);
   const favourites = useSelector(selectFavourites);
-  const { categoryFilter, filteredProducts, minPrice, maxPrice, sortBy } =
-    useSelector((state: RootState) => state.product);
+  const {
+    categoryFilter,
+    filteredProducts,
+    minPrice,
+    maxPrice,
+    sortBy,
+  } = useSelector((state: RootState) => state.product);
 
-  const [open, setOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
 
   useEffect(() => {
     if (user) dispatch(fetchFavourites());
   }, [dispatch, user]);
 
-  // Product stats
+  // Product statistics
   const totalProducts = filteredProducts.length;
   const brandNewCount = filteredProducts.filter(
     (p) => p.condition === "BRAND_NEW"
@@ -49,310 +62,325 @@ const Header: React.FC = () => {
 
   const handleLogout = () => {
     dispatch(logoutUser());
-    setOpen(false);
+    setMobileMenuOpen(false);
   };
 
+  const closeMobileMenu = () => setMobileMenuOpen(false);
+
   return (
-    <header className="bg-white md:w-full shadow-md sticky top-0 z-50">
-      {/* TOP HEADER */}
-      <div className="max-w-7xl mx-auto flex items-center justify-between gap-4 p-4">
+    <header className="bg-white dark:bg-gray-900 shadow-md sticky top-0 z-50 border-b border-gray-200 dark:border-gray-700">
+      {/* Main Top Bar */}
+      <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-4">
         {/* Logo */}
         <Link
           to="/"
-          className="text-2xl font-bold text-indigo-600"
           onClick={() => {
             dispatch(clearAllFilters());
-            setOpen(false);
+            closeMobileMenu();
           }}
+          className="text-2xl font-bold text-indigo-600 dark:text-indigo-400"
         >
           MySoko
         </Link>
 
-        <div className="hidden md:flex flex-1 gap-2 items-center">
+        {/* Desktop Search & Filters */}
+        <div className="hidden md:flex flex-1 max-w-2xl gap-3 items-center">
           <input
             type="text"
             placeholder="Search products..."
-            className="flex-1 border rounded-lg p-2 border-gray-300"
+            className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-transparent focus:outline-none focus:ring-2 focus:ring-indigo-500"
             onChange={(e) => dispatch(setSearchQuery(e.target.value))}
           />
 
           <select
-            className="flex-1 border rounded-lg p-2 border-gray-300"
+            className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-transparent focus:outline-none focus:ring-2 focus:ring-indigo-500"
             onChange={(e) => dispatch(setCategoryFilter(e.target.value))}
           >
-            <option value="">Category</option>
+            <option value="" className="text-gray-900 dark:text-white dark:bg-gray-800">Category</option>
             {categories.map((cat) => (
-              <option key={cat.name} value={cat.name}>
+              <option className="text-gray-900 dark:text-white dark:bg-gray-800" key={cat.name} value={cat.name}>
                 {cat.name}
               </option>
             ))}
           </select>
 
           <select
-            className="flex-1 border rounded-lg p-2 border-gray-300"
+            className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-transparent focus:outline-none focus:ring-2 focus:ring-indigo-500"
             onChange={(e) => dispatch(setBrandFilter(e.target.value))}
           >
-            <option value="">Brand</option>
-            {categories.map((cat) =>
-              cat.name === categoryFilter
-                ? cat.brands.map((brand) => (
-                    <option key={brand} value={brand}>
-                      {brand}
-                    </option>
-                  ))
-                : null
-            )}
+            <option  value="" className="text-gray-900 dark:text-white dark:bg-gray-800">Brand</option>
+            {categories
+              .find((cat) => cat.name === categoryFilter)
+              ?.brands.map((brand) => (
+                <option className="text-gray-900 dark:text-white dark:bg-gray-800" key={brand} value={brand}>
+                  {brand}
+                </option>
+              ))}
           </select>
         </div>
 
-        {/* Favourites */}
-        {user && (
-          <Link
-            to="/favourites"
-            onClick={() => setOpen(false)}
-            className="hidden md:flex items-center gap-2 text-gray-700 hover:text-red-500"
-          >
-            <Heart className="w-6 h-6" />
-            {favourites.length > 0 && (
-              <span className="bg-red-600 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full">
-                {favourites.length}
-              </span>
-            )}
-            Favourites
-          </Link>
-        )}
+        {/* Desktop Actions */}
+        <div className="hidden md:flex items-center gap-6">
+          {/* Favourites */}
+          {user && (
+            <Link
+              to="/favourites"
+              className="flex items-center gap-2 text-gray-700 dark:text-gray-300 hover:text-red-500 transition-colors"
+            >
+              <Heart className="w-6 h-6" />
+              {favourites.length > 0 && (
+                <span className="absolute -mt-4 -mr-4 bg-red-600 text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center">
+                  {favourites.length}
+                </span>
+              )}
+              <span className="hidden lg:inline">Favourites</span>
+            </Link>
+          )}
 
-        {/* DESKTOP AUTH */}
-        <div className="hidden md:flex items-center gap-4">
+          {/* Auth */}
           {user ? (
-            <>
+            <div className="flex items-center gap-4">
               <Link to="/profile">
                 <img
                   src={user.image}
-                  alt="profile"
-                  className="w-10 h-10 rounded-full border cursor-pointer hover:scale-105 transition"
+                  alt="Profile"
+                  className="w-10 h-10 rounded-full border-2 border-gray-300 dark:border-gray-600 hover:scale-105 transition-transform"
                 />
               </Link>
               <button
                 onClick={handleLogout}
-                className="text-red-500 hover:text-red-700 text-sm"
+                className="text-red-500 hover:text-red-600 font-medium text-sm"
               >
                 Logout
               </button>
-            </>
+            </div>
           ) : (
-            <Link to="/login" className="text-gray-700 hover:text-indigo-600">
-              <User className="w-7 h-7" />
-            </Link>
-          )}
-        </div>
-
-        <button className="md:hidden p-2" onClick={() => setOpen(!open)}>
-          {open ? <X size={28} /> : <Menu size={28} />}
-        </button>
-      </div>
-
-      <div className="bg-gray-50 p-4 hidden md:flex items-center justify-between flex-wrap gap-4 max-w-7xl mx-auto">
-        <div className="flex items-center gap-3 flex-wrap">
-          <div className="flex items-center gap-2 bg-white rounded-lg p-2 shadow-sm hover:shadow-md transition">
-            <span className="text-gray-600 font-semibold">Sort:</span>
-            <select
-              className="border-none outline-none focus:ring-0 bg-transparent"
-              value={sortBy}
-              onChange={(e) => dispatch(setSortBy(e.target.value))}
-            >
-              <option value="">Default</option>
-              <option value="latest">Latest</option>
-              <option value="price_low_high">Price: Low → High</option>
-              <option value="price_high_low">Price: High → Low</option>
-            </select>
-          </div>
-
-          {/* Price */}
-          <div className="flex items-center gap-2 bg-white rounded-lg p-2 shadow-sm hover:shadow-md transition">
-            <h1 className="w-8 h-5 mx-1 mb-1 text-green-500">KSH.</h1>
-            <input
-              type="number"
-              placeholder="Min"
-              className="w-20 border border-gray-200 rounded-lg p-1 focus:ring-2 focus:ring-indigo-500"
-              value={minPrice || ""}
-              onChange={(e) => dispatch(setMinPrice(Number(e.target.value)))}
-            />
-            <input
-              type="number"
-              placeholder="Max"
-              className="w-20 border border-gray-200 rounded-lg p-1 focus:ring-2 focus:ring-indigo-500"
-              value={maxPrice || ""}
-              onChange={(e) => dispatch(setMaxPrice(Number(e.target.value)))}
-            />
-          </div>
-
-          {/* Condition Chips */}
-          {["BRAND_NEW", "SLIGHTLY_USED", "REFURBISHED"].map((cond) => (
-            <button
-              key={cond}
-              onClick={() => dispatch(setConditionFilter(cond))}
-              className={`px-3 py-1 rounded-full text-sm font-medium transition ${
-                filteredProducts.some((p) => p.condition === cond)
-                  ? "bg-indigo-500 text-white shadow-md"
-                  : "bg-gray-200 text-gray-700 hover:bg-indigo-100"
-              }`}
-            >
-              {cond.replace("_", " ")}
-            </button>
-          ))}
-        </div>
-
-        {/* Product Stats */}
-        <div className="flex items-center gap-4 flex-wrap text-gray-700">
-          <span className="text-sm font-medium">Listed: {totalProducts}</span>
-          <span className="text-sm font-medium">
-            Brand New: {brandNewCount}
-          </span>
-          <span className="text-sm font-medium">
-            Slightly Used: {slightlyUsedCount}
-          </span>
-          <span className="text-sm font-medium">
-            Refurbished: {refurbishedCount}
-          </span>
-        </div>
-      </div>
-
-      {/* MOBILE MENU */}
-      {open && (
-        <div className="md:hidden bg-white shadow-lg rounded-b-lg p-4 space-y-4">
-          {/* SEARCH */}
-          <input
-            type="text"
-            placeholder="Search products..."
-            className="w-full border rounded-lg p-2 focus:ring-2 focus:ring-indigo-500"
-            onChange={(e) => dispatch(setSearchQuery(e.target.value))}
-          />
-
-          {/* CATEGORY */}
-          <select
-            className="w-full border rounded-lg p-2"
-            onChange={(e) => dispatch(setCategoryFilter(e.target.value))}
-          >
-            <option value="">Category</option>
-            {categories.map((cat) => (
-              <option key={cat.name} value={cat.name}>
-                {cat.name}
-              </option>
-            ))}
-          </select>
-
-          {/* BRAND */}
-          <select
-            className="w-full border rounded-lg p-2"
-            onChange={(e) => dispatch(setBrandFilter(e.target.value))}
-          >
-            <option value="">Brand</option>
-            {categories.map((cat) =>
-              cat.name === categoryFilter
-                ? cat.brands.map((brand) => (
-                    <option key={brand} value={brand}>
-                      {brand}
-                    </option>
-                  ))
-                : null
-            )}
-          </select>
-
-          {/* CONDITION */}
-          <select
-            className="w-full border rounded-lg p-2"
-            onChange={(e) => dispatch(setConditionFilter(e.target.value))}
-          >
-            <option value="">Condition</option>
-            <option value="BRAND_NEW">Brand New</option>
-            <option value="SLIGHTLY_USED">Slightly Used</option>
-            <option value="REFURBISHED">Refurbished</option>
-          </select>
-
-          {/* PRICE FILTER */}
-          <div className="flex items-center gap-2 mt-2">
-            <DollarSign className="w-5 h-5 text-gray-500" />
-            <input
-              type="number"
-              placeholder="Min"
-              className="w-1/2 border rounded-lg p-2 focus:ring-2 focus:ring-indigo-500"
-              value={minPrice || ""}
-              onChange={(e) => dispatch(setMinPrice(Number(e.target.value)))}
-            />
-            <input
-              type="number"
-              placeholder="Max"
-              className="w-1/2 border rounded-lg p-2 focus:ring-2 focus:ring-indigo-500"
-              value={maxPrice || ""}
-              onChange={(e) => dispatch(setMaxPrice(Number(e.target.value)))}
-            />
-          </div>
-
-          {/* SORT */}
-          <select
-            className="w-full border rounded-lg p-2 mt-2"
-            value={sortBy}
-            onChange={(e) => dispatch(setSortBy(e.target.value))}
-          >
-            <option value="">Sort By</option>
-            <option value="latest">Latest</option>
-            <option value="price_low_high">Price: Low → High</option>
-            <option value="price_high_low">Price: High → Low</option>
-          </select>
-
-          {/* FAVOURITES */}
-          {user && (
             <Link
-              to="/favourites"
-              onClick={() => setOpen(false)}
-              className="flex items-center gap-2 hover:text-red-500"
+              to="/login"
+              className="flex items-center gap-2 text-gray-700 dark:text-gray-300 hover:text-indigo-500 transition-colors"
             >
-              <Heart className="w-6 h-6" />
-              Favourites
-              {favourites.length > 0 && (
-                <span className="bg-red-600 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full">
-                  {favourites.length}
-                </span>
-              )}
+              <User className="w-7 h-7" />
+              <span className="hidden lg:inline">Login</span>
             </Link>
           )}
+        </div>
 
-          {/* AUTH */}
-          <div className="pt-4 border-t">
-            {user ? (
-              <div className="flex items-center justify-between">
-                <Link to="/profile" onClick={() => setOpen(false)}>
-                  <img
-                    src={user.image}
-                    alt="profile"
-                    className="w-12 h-12 rounded-full border"
-                  />
-                </Link>
-                <button
-                  onClick={handleLogout}
-                  className="text-red-500 font-semibold"
-                >
-                  Logout
-                </button>
-              </div>
-            ) : (
-              <Link
-                to="/login"
-                onClick={() => setOpen(false)}
-                className="flex items-center gap-2 text-gray-700 hover:text-indigo-600"
+        {/* Mobile Menu Button */}
+        <div className="flex items-center gap-3 md:hidden">
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="p-2"
+          >
+            {mobileMenuOpen ? <X size={28} /> : <Menu size={28} />}
+          </button>
+        </div>
+      </div>
+
+      {/* Desktop Secondary Filters */}
+      <div className="hidden md:block border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+        <div className="max-w-7xl mx-auto px-4 py-4 flex flex-wrap items-center justify-between gap-6">
+          <div className="flex flex-wrap items-center gap-4">
+            {/* Sort */}
+            <div className="flex items-center gap-2 bg-white dark:bg-gray-900 rounded-lg px-4 py-2 shadow-sm">
+              <span className="text-gray-600 dark:text-gray-400 font-medium">Sort:</span>
+             
+       <select
+  value={sortBy}
+  onChange={(e) => dispatch(setSortBy(e.target.value))}
+  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-transparent text-gray-900 dark:text-white"
+>
+  <option value="" className="dark:bg-gray-800">
+    Sort By
+  </option>
+  <option value="latest" className="dark:bg-gray-800">
+    Latest
+  </option>
+  <option value="price_low_high" className="dark:bg-gray-800">
+    Price: Low → High
+  </option>
+  <option value="price_high_low" className="dark:bg-gray-800">
+    Price: High → Low
+  </option>
+</select>
+            </div>
+
+            {/* Price Range */}
+            <div className="flex items-center gap-2 bg-white dark:bg-gray-900 rounded-lg px-4 py-2 shadow-sm">
+              <DollarSign className="w-5 h-5 text-green-600 dark:text-green-400" />
+              <input
+                type="number"
+                placeholder="Min"
+                value={minPrice || ""}
+                onChange={(e) => dispatch(setMinPrice(Number(e.target.value) || undefined))}
+                className="w-24 px-3 py-1 border border-gray-300 dark:border-gray-600 rounded bg-transparent focus:ring-2 focus:ring-indigo-500"
+              />
+              <span className="text-gray-500">–</span>
+              <input
+                type="number"
+                placeholder="Max"
+                value={maxPrice || ""}
+                onChange={(e) => dispatch(setMaxPrice(Number(e.target.value) || undefined))}
+                className="w-24 px-3 py-1 border border-gray-300 dark:border-gray-600 rounded bg-transparent focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+
+            {/* Condition Chips */}
+            {["BRAND_NEW", "SLIGHTLY_USED", "REFURBISHED"].map((cond) => (
+              <button
+                key={cond}
+                onClick={() => dispatch(setConditionFilter(cond))}
+                className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                  filteredProducts.some((p) => p.condition === cond)
+                    ? "bg-indigo-600 text-white shadow-md"
+                    : "bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/50"
+                }`}
               >
-                <User className="w-6 h-6" /> Login
+                {cond.replace("_", " ")}
+              </button>
+            ))}
+          </div>
+
+          {/* Stats */}
+          <div className="flex flex-wrap gap-6 text-sm text-gray-600 dark:text-gray-400">
+            <span>Listed: <strong className="text-gray-900 dark:text-white">{totalProducts}</strong></span>
+            <span>Brand New: <strong className="text-gray-900 dark:text-white">{brandNewCount}</strong></span>
+            <span>Slightly Used: <strong className="text-gray-900 dark:text-white">{slightlyUsedCount}</strong></span>
+            <span>Refurbished: <strong className="text-gray-900 dark:text-white">{refurbishedCount}</strong></span>
+          </div>
+        </div>
+      </div>
+
+      {/* Mobile Menu */}
+      {mobileMenuOpen && (
+        <div className="md:hidden bg-white dark:bg-gray-900 border-t dark:border-gray-700 shadow-lg">
+          <div className="px-4 py-6 space-y-5">
+            <input
+              type="text"
+              placeholder="Search products..."
+              className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-transparent"
+              onChange={(e) => dispatch(setSearchQuery(e.target.value))}
+            />
+
+            <select
+              className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-transparent"
+              onChange={(e) => dispatch(setCategoryFilter(e.target.value))}
+            >
+              <option value="">Category</option>
+              {categories.map((cat) => (
+                <option key={cat.name} value={cat.name}>
+                  {cat.name}
+                </option>
+              ))}
+            </select>
+
+            <select
+              className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-transparent"
+              onChange={(e) => dispatch(setBrandFilter(e.target.value))}
+            >
+              <option value="">Brand</option>
+              {categories
+                .find((cat) => cat.name === categoryFilter)
+                ?.brands.map((brand) => (
+                  <option key={brand} value={brand}>
+                    {brand}
+                  </option>
+                ))}
+            </select>
+
+            <select
+              className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-transparent"
+              onChange={(e) => dispatch(setConditionFilter(e.target.value))}
+            >
+              <option value="">Condition</option>
+              <option value="BRAND_NEW">Brand New</option>
+              <option value="SLIGHTLY_USED">Slightly Used</option>
+              <option value="REFURBISHED">Refurbished</option>
+            </select>
+
+            <div className="flex gap-3">
+              <DollarSign className="w-6 h-6 text-gray-500 dark:text-gray-400 mt-3" />
+              <div className="flex-1 grid grid-cols-2 gap-3">
+                <input
+                  type="number"
+                  placeholder="Min Price"
+                  value={minPrice || ""}
+                  onChange={(e) => dispatch(setMinPrice(Number(e.target.value) || undefined))}
+                  className="px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-transparent"
+                />
+                <input
+                  type="number"
+                  placeholder="Max Price"
+                  value={maxPrice || ""}
+                  onChange={(e) => dispatch(setMaxPrice(Number(e.target.value) || undefined))}
+                  className="px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-transparent"
+                />
+              </div>
+            </div>
+<select
+  value={sortBy}
+  onChange={(e) => dispatch(setSortBy(e.target.value))}
+  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-transparent text-gray-900 dark:text-white"
+>
+  <option value="" className="dark:bg-gray-800">
+    Sort By
+  </option>
+  <option value="latest" className="dark:bg-gray-800">
+    Latest
+  </option>
+  <option value="price_low_high" className="dark:bg-gray-800">
+    Price: Low → High
+  </option>
+  <option value="price_high_low" className="dark:bg-gray-800">
+    Price: High → Low
+  </option>
+</select>
+
+            {user && (
+              <Link
+                to="/favourites"
+                onClick={closeMobileMenu}
+                className="flex items-center gap-3 text-gray-700 dark:text-gray-300 hover:text-red-500"
+              >
+                <Heart className="w-6 h-6" />
+                <span>Favourites ({favourites.length})</span>
               </Link>
             )}
-          </div>
 
-          {/* PRODUCT STATS */}
-          <div className="flex items-center gap-4 mt-4 text-gray-700 flex-wrap">
-            <span>Listed: {totalProducts}</span>
-            <span>Brand New: {brandNewCount}</span>
-            <span>Slightly Used: {slightlyUsedCount}</span>
-            <span>Refurbished: {refurbishedCount}</span>
+            <div className="pt-4 border-t dark:border-gray-700 space-y-4">
+              {user ? (
+                <div className="flex items-center justify-between">
+                  <Link to="/profile" onClick={closeMobileMenu}>
+                    <img
+                      src={user.image}
+                      alt="Profile"
+                      className="w-14 h-14 rounded-full border-2 border-gray-300 dark:border-gray-600"
+                    />
+                  </Link>
+                  <button
+                    onClick={handleLogout}
+                    className="text-red-500 dark:text-red-400 font-semibold"
+                  >
+                    Logout
+                  </button>
+                </div>
+              ) : (
+                <Link
+                  to="/login"
+                  onClick={closeMobileMenu}
+                  className="flex items-center gap-3 text-gray-700 dark:text-gray-300 hover:text-indigo-500"
+                >
+                  <User className="w-6 h-6" />
+                  <span>Login</span>
+                </Link>
+              )}
+            </div>
+
+            <div className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
+              <p>Listed: <strong className="text-gray-900 dark:text-white">{totalProducts}</strong></p>
+              <p>Brand New: <strong className="text-gray-900 dark:text-white">{brandNewCount}</strong></p>
+              <p>Slightly Used: <strong className="text-gray-900 dark:text-white">{slightlyUsedCount}</strong></p>
+              <p>Refurbished: <strong className="text-gray-900 dark:text-white">{refurbishedCount}</strong></p>
+            </div>
           </div>
         </div>
       )}

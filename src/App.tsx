@@ -16,6 +16,7 @@ import { useDispatch } from "react-redux";
 import { fetchProfile } from "./redux/reducers/authReducer";
 import { useEffect } from "react";
 import FavouritesPage from "./components/Favourite/FavouritesPage";
+import CategoryProducts from "./components/Product/CategoryProducts";
 
 const App = () => {
 
@@ -38,6 +39,7 @@ const App = () => {
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password/:token" element={<ResetPassword />} />
         <Route path="/favourites" element={<FavouritesPage />} />
+        <Route path="/category/:category" element={<CategoryProducts />} />
 
 
         <Route

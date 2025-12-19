@@ -29,6 +29,7 @@ export interface Product {
   averageRating?: number;
   totalReviews?: number;
   whatsappLink?: string;
+  createdAt: string;
 }
 
 interface ErrorResponse {
@@ -379,7 +380,15 @@ const productSlice = createSlice({
     builder.addCase(fetchProducts.fulfilled, (state, action) => {
       state.loading = false;
       state.products = action.payload;
-      state.filteredProducts = action.payload; // initially show all
+
+      // Apply category filter if it exists
+      if (state.categoryFilter) {
+        state.filteredProducts = action.payload.filter(
+          (p) => p.category.toLowerCase() === state.categoryFilter.toLowerCase()
+        );
+      } else {
+        state.filteredProducts = action.payload;
+      }
     });
     builder.addCase(fetchProducts.rejected, (state, action) => {
       state.loading = false;
@@ -423,15 +432,20 @@ const productSlice = createSlice({
       state.loading = true;
       state.error = null;
     });
+
     builder.addCase(fetchProductById.fulfilled, (state, action) => {
-      state.loading = false;
-      state.currentProduct = action.payload; // store the fetched product
-    });
+  state.loading = false;
+  state.currentProduct = action.payload;
+  state.error = null;
+});
+
+    
     builder.addCase(fetchProductById.rejected, (state, action) => {
       state.loading = false;
       state.error =
-        action.payload?.message || "Failed to fetch product details";
+      action.payload?.message || "Failed to fetch product details";
     });
+  
     // DELETE PRODUCT
     builder.addCase(deleteProduct.pending, (state) => {
       state.loading = true;
