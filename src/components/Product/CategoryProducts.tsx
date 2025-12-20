@@ -7,6 +7,7 @@ import {
   fetchProducts,
   setCategoryFilter,
   deleteProduct,
+  clearAllFilters,
 } from "../../redux/reducers/productReducer";
 import {
   addFavourite,
@@ -38,7 +39,9 @@ const CategoryProducts: React.FC = () => {
     Array.from({ length: 5 }, (_, i) => (
       <span
         key={i}
-        className={i < rating ? "text-yellow-400" : "text-gray-400 dark:text-gray-600"}
+        className={
+          i < rating ? "text-yellow-400" : "text-gray-400 dark:text-gray-600"
+        }
       >
         ★
       </span>
@@ -108,7 +111,7 @@ const CategoryProducts: React.FC = () => {
           <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-10">
             <button
               onClick={() => {
-                dispatch(fetchProducts());
+                dispatch(clearAllFilters());
                 navigate("/");
               }}
               className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition"
@@ -130,7 +133,9 @@ const CategoryProducts: React.FC = () => {
             <select
               value={timeFilter}
               onChange={(e) =>
-                setTimeFilter(e.target.value as "24h" | "48h" | "1w" | "1m" | "all")
+                setTimeFilter(
+                  e.target.value as "24h" | "48h" | "1w" | "1m" | "all"
+                )
               }
               className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none transition"
             >
@@ -141,7 +146,8 @@ const CategoryProducts: React.FC = () => {
               <option value="1m">Last month</option>
             </select>
             <span className="text-sm text-gray-600 dark:text-gray-400">
-              {filteredByTime.length} product{filteredByTime.length !== 1 ? "s" : ""}
+              {filteredByTime.length} product
+              {filteredByTime.length !== 1 ? "s" : ""}
             </span>
           </div>
 
@@ -164,7 +170,9 @@ const CategoryProducts: React.FC = () => {
                 );
                 const whatsappLink =
                   user && !isOwner && product.seller?.whatsappNumber
-                    ? `https://wa.me/${product.seller.whatsappNumber}?text=${encodeURIComponent(
+                    ? `https://wa.me/${
+                        product.seller.whatsappNumber
+                      }?text=${encodeURIComponent(
                         `Hello ${product.seller.fullName}, my name is ${user.fullName}. I am interested in your product "${product.title}". Is it available?`
                       )}`
                     : null;
@@ -211,7 +219,9 @@ const CategoryProducts: React.FC = () => {
 
                         {product.averageRating !== undefined && (
                           <div className="flex items-center gap-2 mt-3">
-                            <div className="flex text-lg">{renderStars(Math.round(product.averageRating))}</div>
+                            <div className="flex text-lg">
+                              {renderStars(Math.round(product.averageRating))}
+                            </div>
                             <span className="text-sm text-gray-600 dark:text-gray-400">
                               ({product.totalReviews || 0})
                             </span>
@@ -283,7 +293,8 @@ const CategoryProducts: React.FC = () => {
                               navigate("/login");
                               return;
                             }
-                            if (whatsappLink) window.open(whatsappLink, "_blank");
+                            if (whatsappLink)
+                              window.open(whatsappLink, "_blank");
                           }}
                           className={`w-full px-5 py-3 rounded-lg text-center font-medium shadow-md transition-all ${
                             user
@@ -349,11 +360,16 @@ const CategoryProducts: React.FC = () => {
                                     e.preventDefault();
                                     e.stopPropagation();
                                     try {
-                                      await dispatch(deleteProduct(product.id)).unwrap();
+                                      await dispatch(
+                                        deleteProduct(product.id)
+                                      ).unwrap();
                                       dispatch(fetchProducts());
                                       setOpenMenuId(null);
                                     } catch (err) {
-                                      console.error("Failed to delete product:", err);
+                                      console.error(
+                                        "Failed to delete product:",
+                                        err
+                                      );
                                     }
                                   }}
                                   className="block w-full text-left px-5 py-3 text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700 text-sm font-medium"

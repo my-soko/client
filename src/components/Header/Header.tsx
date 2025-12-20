@@ -17,13 +17,7 @@ import {
   clearAllFilters,
 } from "../../redux/reducers/productReducer";
 
-import {
-  Menu,
-  X,
-  User,
-  Heart,
-  DollarSign,
-} from "lucide-react";
+import { Menu, X, User, Heart, DollarSign } from "lucide-react";
 
 import {
   fetchFavourites,
@@ -34,13 +28,8 @@ const Header: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
   const { user } = useSelector((state: RootState) => state.auth);
   const favourites = useSelector(selectFavourites);
-  const {
-    categoryFilter,
-    filteredProducts,
-    minPrice,
-    maxPrice,
-    sortBy,
-  } = useSelector((state: RootState) => state.product);
+  const { categoryFilter, filteredProducts, minPrice, maxPrice, sortBy, products } =
+    useSelector((state: RootState) => state.product);
 
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
 
@@ -59,6 +48,9 @@ const Header: React.FC = () => {
   const refurbishedCount = filteredProducts.filter(
     (p) => p.condition === "REFURBISHED"
   ).length;
+
+  // Real total sales: count products with status === "sold"
+  const totalSales = products.filter((p) => p.status === "sold").length;
 
   const handleLogout = () => {
     dispatch(logoutUser());
@@ -88,31 +80,43 @@ const Header: React.FC = () => {
           <input
             type="text"
             placeholder="Search products..."
-            className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-transparent focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-transparent text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
             onChange={(e) => dispatch(setSearchQuery(e.target.value))}
           />
 
           <select
-            className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-transparent focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-transparent text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
             onChange={(e) => dispatch(setCategoryFilter(e.target.value))}
           >
-            <option value="" className="text-gray-900 dark:text-white dark:bg-gray-800">Category</option>
+            <option value="" className="text-gray-900 dark:text-white dark:bg-gray-800">
+              Category
+            </option>
             {categories.map((cat) => (
-              <option className="text-gray-900 dark:text-white dark:bg-gray-800" key={cat.name} value={cat.name}>
+              <option
+                className="text-gray-900 dark:text-white dark:bg-gray-800"
+                key={cat.name}
+                value={cat.name}
+              >
                 {cat.name}
               </option>
             ))}
           </select>
 
           <select
-            className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-transparent focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-transparent text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
             onChange={(e) => dispatch(setBrandFilter(e.target.value))}
           >
-            <option  value="" className="text-gray-900 dark:text-white dark:bg-gray-800">Brand</option>
+            <option value="" className="text-gray-900 dark:text-white dark:bg-gray-800">
+              Brand
+            </option>
             {categories
               .find((cat) => cat.name === categoryFilter)
               ?.brands.map((brand) => (
-                <option className="text-gray-900 dark:text-white dark:bg-gray-800" key={brand} value={brand}>
+                <option
+                  className="text-gray-900 dark:text-white dark:bg-gray-800"
+                  key={brand}
+                  value={brand}
+                >
                   {brand}
                 </option>
               ))}
@@ -182,26 +186,28 @@ const Header: React.FC = () => {
           <div className="flex flex-wrap items-center gap-4">
             {/* Sort */}
             <div className="flex items-center gap-2 bg-white dark:bg-gray-900 rounded-lg px-4 py-2 shadow-sm">
-              <span className="text-gray-600 dark:text-gray-400 font-medium">Sort:</span>
-             
-       <select
-  value={sortBy}
-  onChange={(e) => dispatch(setSortBy(e.target.value))}
-  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-transparent text-gray-900 dark:text-white"
->
-  <option value="" className="dark:bg-gray-800">
-    Sort By
-  </option>
-  <option value="latest" className="dark:bg-gray-800">
-    Latest
-  </option>
-  <option value="price_low_high" className="dark:bg-gray-800">
-    Price: Low → High
-  </option>
-  <option value="price_high_low" className="dark:bg-gray-800">
-    Price: High → Low
-  </option>
-</select>
+              <span className="text-gray-600 dark:text-gray-400 font-medium">
+                Sort:
+              </span>
+
+              <select
+                value={sortBy}
+                onChange={(e) => dispatch(setSortBy(e.target.value))}
+                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-transparent text-gray-900 dark:text-white"
+              >
+                <option value="" className="dark:bg-gray-800">
+                  Sort By
+                </option>
+                <option value="latest" className="dark:bg-gray-800">
+                  Latest
+                </option>
+                <option value="price_low_high" className="dark:bg-gray-800">
+                  Price: Low → High
+                </option>
+                <option value="price_high_low" className="dark:bg-gray-800">
+                  Price: High → Low
+                </option>
+              </select>
             </div>
 
             {/* Price Range */}
@@ -211,16 +217,20 @@ const Header: React.FC = () => {
                 type="number"
                 placeholder="Min"
                 value={minPrice || ""}
-                onChange={(e) => dispatch(setMinPrice(Number(e.target.value) || undefined))}
-                className="w-24 px-3 py-1 border border-gray-300 dark:border-gray-600 rounded bg-transparent focus:ring-2 focus:ring-indigo-500"
+                onChange={(e) =>
+                  dispatch(setMinPrice(Number(e.target.value) || undefined))
+                }
+                className="w-24 px-3 py-1 border border-gray-300 dark:border-gray-600 rounded bg-transparent text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
               />
               <span className="text-gray-500">–</span>
               <input
                 type="number"
                 placeholder="Max"
                 value={maxPrice || ""}
-                onChange={(e) => dispatch(setMaxPrice(Number(e.target.value) || undefined))}
-                className="w-24 px-3 py-1 border border-gray-300 dark:border-gray-600 rounded bg-transparent focus:ring-2 focus:ring-indigo-500"
+                onChange={(e) =>
+                  dispatch(setMaxPrice(Number(e.target.value) || undefined))
+                }
+                className="w-24 px-3 py-1 border border-gray-300 dark:border-gray-600 rounded bg-transparent text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
               />
             </div>
 
@@ -242,10 +252,36 @@ const Header: React.FC = () => {
 
           {/* Stats */}
           <div className="flex flex-wrap gap-6 text-sm text-gray-600 dark:text-gray-400">
-            <span>Listed: <strong className="text-gray-900 dark:text-white">{totalProducts}</strong></span>
-            <span>Brand New: <strong className="text-gray-900 dark:text-white">{brandNewCount}</strong></span>
-            <span>Slightly Used: <strong className="text-gray-900 dark:text-white">{slightlyUsedCount}</strong></span>
-            <span>Refurbished: <strong className="text-gray-900 dark:text-white">{refurbishedCount}</strong></span>
+            <span>
+              Listed:{" "}
+              <strong className="text-gray-900 dark:text-white">
+                {totalProducts}
+              </strong>
+            </span>
+            <span>
+              Brand New:{" "}
+              <strong className="text-gray-900 dark:text-white">
+                {brandNewCount}
+              </strong>
+            </span>
+            <span>
+              Slightly Used:{" "}
+              <strong className="text-gray-900 dark:text-white">
+                {slightlyUsedCount}
+              </strong>
+            </span>
+            <span>
+              Refurbished:{" "}
+              <strong className="text-gray-900 dark:text-white">
+                {refurbishedCount}
+              </strong>
+            </span>
+            <span>
+              Total Sales:{" "}
+              <strong className="text-green-600 dark:text-green-400">
+                {totalSales}
+              </strong>
+            </span>
           </div>
         </div>
       </div>
@@ -257,12 +293,12 @@ const Header: React.FC = () => {
             <input
               type="text"
               placeholder="Search products..."
-              className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-transparent"
+              className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-transparent text-gray-900 dark:text-white"
               onChange={(e) => dispatch(setSearchQuery(e.target.value))}
             />
 
             <select
-              className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-transparent"
+              className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-transparent text-gray-900 dark:text-white"
               onChange={(e) => dispatch(setCategoryFilter(e.target.value))}
             >
               <option value="">Category</option>
@@ -274,7 +310,7 @@ const Header: React.FC = () => {
             </select>
 
             <select
-              className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-transparent"
+              className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-transparent text-gray-900 dark:text-white"
               onChange={(e) => dispatch(setBrandFilter(e.target.value))}
             >
               <option value="">Brand</option>
@@ -288,7 +324,7 @@ const Header: React.FC = () => {
             </select>
 
             <select
-              className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-transparent"
+              className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-transparent text-gray-900 dark:text-white"
               onChange={(e) => dispatch(setConditionFilter(e.target.value))}
             >
               <option value="">Condition</option>
@@ -304,36 +340,40 @@ const Header: React.FC = () => {
                   type="number"
                   placeholder="Min Price"
                   value={minPrice || ""}
-                  onChange={(e) => dispatch(setMinPrice(Number(e.target.value) || undefined))}
-                  className="px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-transparent"
+                  onChange={(e) =>
+                    dispatch(setMinPrice(Number(e.target.value) || undefined))
+                  }
+                  className="px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-transparent text-gray-900 dark:text-white"
                 />
                 <input
                   type="number"
                   placeholder="Max Price"
                   value={maxPrice || ""}
-                  onChange={(e) => dispatch(setMaxPrice(Number(e.target.value) || undefined))}
-                  className="px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-transparent"
+                  onChange={(e) =>
+                    dispatch(setMaxPrice(Number(e.target.value) || undefined))
+                  }
+                  className="px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-transparent text-gray-900 dark:text-white"
                 />
               </div>
             </div>
-<select
-  value={sortBy}
-  onChange={(e) => dispatch(setSortBy(e.target.value))}
-  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-transparent text-gray-900 dark:text-white"
->
-  <option value="" className="dark:bg-gray-800">
-    Sort By
-  </option>
-  <option value="latest" className="dark:bg-gray-800">
-    Latest
-  </option>
-  <option value="price_low_high" className="dark:bg-gray-800">
-    Price: Low → High
-  </option>
-  <option value="price_high_low" className="dark:bg-gray-800">
-    Price: High → Low
-  </option>
-</select>
+            <select
+              value={sortBy}
+              onChange={(e) => dispatch(setSortBy(e.target.value))}
+              className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-transparent text-gray-900 dark:text-white"
+            >
+              <option value="" className="dark:bg-gray-800">
+                Sort By
+              </option>
+              <option value="latest" className="dark:bg-gray-800">
+                Latest
+              </option>
+              <option value="price_low_high" className="dark:bg-gray-800">
+                Price: Low → High
+              </option>
+              <option value="price_high_low" className="dark:bg-gray-800">
+                Price: High → Low
+              </option>
+            </select>
 
             {user && (
               <Link
@@ -376,10 +416,36 @@ const Header: React.FC = () => {
             </div>
 
             <div className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
-              <p>Listed: <strong className="text-gray-900 dark:text-white">{totalProducts}</strong></p>
-              <p>Brand New: <strong className="text-gray-900 dark:text-white">{brandNewCount}</strong></p>
-              <p>Slightly Used: <strong className="text-gray-900 dark:text-white">{slightlyUsedCount}</strong></p>
-              <p>Refurbished: <strong className="text-gray-900 dark:text-white">{refurbishedCount}</strong></p>
+              <p>
+                Listed:{" "}
+                <strong className="text-gray-900 dark:text-white">
+                  {totalProducts}
+                </strong>
+              </p>
+              <p>
+                Brand New:{" "}
+                <strong className="text-gray-900 dark:text-white">
+                  {brandNewCount}
+                </strong>
+              </p>
+              <p>
+                Slightly Used:{" "}
+                <strong className="text-gray-900 dark:text-white">
+                  {slightlyUsedCount}
+                </strong>
+              </p>
+              <p>
+                Refurbished:{" "}
+                <strong className="text-gray-900 dark:text-white">
+                  {refurbishedCount}
+                </strong>
+              </p>
+              <p>
+                Total Sales:{" "}
+                <strong className="text-green-600 dark:text-green-400">
+                  {totalSales}
+                </strong>
+              </p>
             </div>
           </div>
         </div>

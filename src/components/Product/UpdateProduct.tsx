@@ -198,9 +198,9 @@ const UpdateProduct: React.FC = () => {
               disabled={formLocked}
               className="w-full border border-gray-300 dark:border-gray-600 p-3 rounded bg-transparent text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
             >
-              <option value="">Choose Category</option>
+              <option className="dark:bg-gray-800" value="">Choose Category</option>
               {categories.map((cat) => (
-                <option key={cat.name} value={cat.name}>
+                <option className="dark:bg-gray-800" key={cat.name} value={cat.name}>
                   {cat.name}
                 </option>
               ))}
@@ -219,12 +219,12 @@ const UpdateProduct: React.FC = () => {
               disabled={formLocked || !category}
               className="w-full border border-gray-300 dark:border-gray-600 p-3 rounded bg-transparent text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 disabled:opacity-60"
             >
-              <option value="">Choose Brand</option>
+              <option className="dark:bg-gray-800" value="">Choose Brand</option>
               {category &&
                 categories
                   .find((c) => c.name === category)
                   ?.brands.map((bnd) => (
-                    <option key={bnd} value={bnd}>
+                    <option className="dark:bg-gray-800" key={bnd} value={bnd}>
                       {bnd}
                     </option>
                   ))}
@@ -243,10 +243,10 @@ const UpdateProduct: React.FC = () => {
             required
             className="w-full border border-gray-300 dark:border-gray-600 p-3 rounded bg-transparent text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
           >
-            <option value="">Choose Condition</option>
-            <option value="BRAND_NEW">Brand New</option>
-            <option value="SLIGHTLY_USED">Slightly Used</option>
-            <option value="REFURBISHED">Refurbished</option>
+            <option className="dark:bg-gray-800" value="">Choose Condition</option>
+            <option className="dark:bg-gray-800" value="BRAND_NEW">Brand New</option>
+            <option className="dark:bg-gray-800" value="SLIGHTLY_USED">Slightly Used</option>
+            <option className="dark:bg-gray-800" value="REFURBISHED">Refurbished</option>
           </select>
         </div>
 
@@ -260,8 +260,8 @@ const UpdateProduct: React.FC = () => {
             onChange={(e) => setStatus(e.target.value)}
             className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-3 bg-transparent text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
           >
-            <option value="onsale">On Sale</option>
-            <option value="sold">Sold</option>
+            <option className="dark:bg-gray-800" value="onsale">On Sale</option>
+            <option className="dark:bg-gray-800" value="sold">Sold</option>
           </select>
         </div>
 

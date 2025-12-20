@@ -434,18 +434,17 @@ const productSlice = createSlice({
     });
 
     builder.addCase(fetchProductById.fulfilled, (state, action) => {
-  state.loading = false;
-  state.currentProduct = action.payload;
-  state.error = null;
-});
+      state.loading = false;
+      state.currentProduct = action.payload;
+      state.error = null;
+    });
 
-    
     builder.addCase(fetchProductById.rejected, (state, action) => {
       state.loading = false;
       state.error =
-      action.payload?.message || "Failed to fetch product details";
+        action.payload?.message || "Failed to fetch product details";
     });
-  
+
     // DELETE PRODUCT
     builder.addCase(deleteProduct.pending, (state) => {
       state.loading = true;

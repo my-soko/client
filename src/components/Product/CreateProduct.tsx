@@ -246,8 +246,8 @@ const CreateProduct: React.FC = () => {
               disabled={formLocked}
               className="flex-1 px-5 py-4 border border-gray-300 dark:border-gray-600 rounded-xl bg-transparent text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none transition"
             >
-              <option value="onsale">On Sale</option>
-              <option value="sold">Sold</option>
+              <option className="dark:bg-gray-800" value="onsale">On Sale</option>
+              <option className="dark:bg-gray-800" value="sold">Sold</option>
             </select>
 
             <label className="flex items-center gap-3 cursor-pointer">
@@ -279,9 +279,9 @@ const CreateProduct: React.FC = () => {
               disabled={formLocked}
               className="w-full px-5 py-4 border border-gray-300 dark:border-gray-600 rounded-xl bg-transparent text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none transition"
             >
-              <option value="">Select Category</option>
+              <option className="dark:bg-gray-800" value="">Select Category</option>
               {categories.map((cat) => (
-                <option key={cat.name} value={cat.name}>
+                <option className="dark:bg-gray-800" key={cat.name} value={cat.name}>
                   {cat.name}
                 </option>
               ))}
@@ -300,14 +300,14 @@ const CreateProduct: React.FC = () => {
               disabled={formLocked || !category}
               className="w-full px-5 py-4 border border-gray-300 dark:border-gray-600 rounded-xl bg-transparent text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none transition disabled:opacity-60"
             >
-              <option value="">
+              <option className="dark:bg-gray-800" value="">
                 {category ? "Select Brand" : "Choose Category First"}
               </option>
               {category &&
                 categories
                   .find((c) => c.name === category)
                   ?.brands.map((bnd) => (
-                    <option key={bnd} value={bnd}>
+                    <option className="dark:bg-gray-800" key={bnd} value={bnd}>
                       {bnd}
                     </option>
                   ))}
@@ -326,10 +326,10 @@ const CreateProduct: React.FC = () => {
               disabled={formLocked}
               className="w-full px-5 py-4 border border-gray-300 dark:border-gray-600 rounded-xl bg-transparent text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none transition"
             >
-              <option value="">Select Condition</option>
-              <option value="BRAND_NEW">Brand New</option>
-              <option value="SLIGHTLY_USED">Slightly Used</option>
-              <option value="REFURBISHED">Refurbished</option>
+              <option className="dark:bg-gray-800" value="">Select Condition</option>
+              <option className="dark:bg-gray-800" value="BRAND_NEW">Brand New</option>
+              <option className="dark:bg-gray-800" value="SLIGHTLY_USED">Slightly Used</option>
+              <option className="dark:bg-gray-800" value="REFURBISHED">Refurbished</option>
             </select>
           </div>
 
