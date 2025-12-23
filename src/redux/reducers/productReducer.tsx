@@ -20,6 +20,7 @@ export interface Product {
   quickSale: boolean;
   category: string;
   brand: string;
+  warranty: string | null;
   condition: "BRAND_NEW" | "SLIGHTLY_USED" | "REFURBISHED";
   imageUrl: string;
   images: string[];

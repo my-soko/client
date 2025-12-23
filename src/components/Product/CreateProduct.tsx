@@ -7,6 +7,7 @@ import { categories } from "../../util/Category";
 import PaymentForm from "../Payment/PaymentForm";
 import { createProduct } from "../../redux/reducers/productReducer";
 import { setFee } from "../../redux/reducers/paymentSlice";
+import { warrantyOptions } from "../../util/Warranty";
 
 const CreateProduct: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -31,6 +32,7 @@ const CreateProduct: React.FC = () => {
   const [stockInCount, setStockInCount] = useState("");
   const [category, setCategory] = useState("");
   const [brand, setBrand] = useState("");
+  const [warranty, setWarranty] = useState("");
   const [condition, setCondition] = useState("");
   const [status, setStatus] = useState("onsale");
   const [quickSale, setQuickSale] = useState(false);
@@ -77,6 +79,7 @@ const CreateProduct: React.FC = () => {
     fd.append("quickSale", quickSale.toString());
     fd.append("category", category);
     fd.append("brand", brand);
+    fd.append("warranty", warranty);
     fd.append("condition", condition);
     fd.append("whatsappNumber", whatsappNumber);
 
@@ -226,6 +229,27 @@ const CreateProduct: React.FC = () => {
               className="px-5 py-4 border border-gray-300 dark:border-gray-600 rounded-xl bg-transparent text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none transition"
             />
           </div>
+
+          <div>
+          <label className="block text-gray-700 dark:text-gray-300 font-medium mb-1">
+            Warranty
+          </label>
+          <select
+            value={warranty}
+            onChange={(e) => setWarranty(e.target.value)}
+            className="w-full border border-gray-300 dark:border-gray-600 p-3 rounded bg-transparent text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
+          >
+            {warrantyOptions.map((opt) => (
+              <option
+                key={opt.value}
+                value={opt.value}
+                className="dark:bg-gray-800"
+              >
+                {opt.label}
+              </option>
+            ))}
+          </select>
+        </div>
 
           {/* Stock */}
           <input

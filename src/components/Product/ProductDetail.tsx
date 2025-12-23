@@ -51,9 +51,10 @@ const ProductDetail: React.FC = () => {
     );
 
   const isOwner = user?.id === currentProduct.sellerId;
+  const isSold = currentProduct.status === "sold";
 
   const whatsappLink =
-    user && !isOwner && currentProduct.seller?.whatsappNumber
+    user && !isOwner && currentProduct.seller?.whatsappNumber && !isSold
       ? `https://wa.me/${currentProduct.seller.whatsappNumber}?text=${encodeURIComponent(
           `Hello ${currentProduct.seller.fullName}, my name is ${user.fullName}. I saw your product "${currentProduct.title}" on MySoko and I'm very interested! Is it still available?`
         )}`
@@ -96,7 +97,7 @@ const ProductDetail: React.FC = () => {
                   alt={currentProduct.title}
                   className="w-full h-full object-contain hover:scale-105 transition-transform duration-500"
                 />
-                {currentProduct.status === "sold" && (
+                {isSold && (
                   <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
                     <span className="text-white text-4xl font-bold">SOLD</span>
                   </div>
@@ -127,17 +128,13 @@ const ProductDetail: React.FC = () => {
               )}
             </div>
 
-            {/* Details Section */}
             <div className="flex flex-col justify-between">
               <div>
-                {/* Title */}
                 <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">
                   {currentProduct.title}
                 </h1>
-
-                {/* Quick Badges */}
                 <div className="flex flex-wrap gap-3 mb-6">
-                  {currentProduct.quickSale && currentProduct.status !== "sold" && (
+                  {currentProduct.quickSale && !isSold && (
                     <span className="bg-red-600 text-white px-4 py-2 rounded-full text-sm font-bold animate-pulse">
                       🔥 Quick Sale
                     </span>
@@ -153,6 +150,21 @@ const ProductDetail: React.FC = () => {
                       }`}
                     >
                       {currentProduct.condition.replace("_", " ")}
+                    </span>
+                  )}
+                  {currentProduct.warranty && currentProduct.warranty.trim() ? (
+                    currentProduct.warranty === "No warranty" ? (
+                      <span className="inline-block px-4 py-1.5 bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400 rounded-full text-xs font-medium shadow-sm">
+                        No Warranty
+                      </span>
+                    ) : (
+                      <span className="inline-block px-4 py-1.5 bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300 rounded-full text-xs font-semibold shadow-sm">
+                        Warranty 🛡️ {currentProduct.warranty}
+                      </span>
+                    )
+                  ) : (
+                    <span className="inline-block px-4 py-1.5 bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400 rounded-full text-xs font-medium shadow-sm">
+                      No Warranty
                     </span>
                   )}
                 </div>
@@ -205,25 +217,26 @@ const ProductDetail: React.FC = () => {
                       {currentProduct.seller.fullName}
                     </span>
                   </p>
-
-                  {currentProduct.createdAt && (
-                    <p className="text-sm text-gray-500 dark:text-gray-500 italic">
-                      Posted: {new Date(currentProduct.createdAt).toLocaleDateString()}
-                    </p>
-                  )}
                 </div>
 
-                {/* Contact Button */}
+                {/* Contact Button - Disabled if sold */}
                 {!isOwner && (
                   <button
                     onClick={handleWhatsAppClick}
+                    disabled={isSold}
                     className={`w-full py-4 rounded-xl text-xl font-bold shadow-lg transition-all transform hover:scale-105 ${
-                      user
+                      isSold
+                        ? "bg-gray-400 cursor-not-allowed text-gray-700"
+                        : user
                         ? "bg-green-600 hover:bg-green-700 text-white"
                         : "bg-gray-300 dark:bg-gray-700 text-gray-600 dark:text-gray-400 cursor-not-allowed"
                     }`}
                   >
-                    {user ? "Contact Seller via WhatsApp" : "Login to Contact Seller"}
+                    {isSold
+                      ? "Product Sold"
+                      : user
+                      ? "Contact Seller via WhatsApp"
+                      : "Login to Contact Seller"}
                   </button>
                 )}
 
@@ -232,6 +245,12 @@ const ProductDetail: React.FC = () => {
                     This is your listing
                   </div>
                 )}
+
+                  {currentProduct.createdAt && (
+                    <p className="text-sm mt-6 text-gray-300 dark:text-gray-400 italic">
+                      Posted: {new Date(currentProduct.createdAt).toLocaleDateString()}
+                    </p>
+                  )}
               </div>
             </div>
           </div>

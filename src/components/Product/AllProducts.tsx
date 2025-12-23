@@ -139,7 +139,7 @@ const AllProducts: React.FC = () => {
                         {/* IMAGE */}
                         <div className="aspect-[4/3] bg-gray-100 dark:bg-gray-700 overflow-hidden relative">
                           {product.quickSale && product.status !== "sold" && (
-                            <span className="absolute top-3 left-3 bg-red-600 text-white text-xs font-bold px-3 py-1 rounded-full shadow-md flex items-center gap-1 animate-pulse z-10">
+                            <span className="absolute top-3 left-3 bg-purple-600 text-white text-xs font-bold px-3 py-1 rounded-full shadow-md flex items-center gap-1 animate-pulse z-10">
                               🔥 Quick Sale
                             </span>
                           )}
@@ -227,12 +227,6 @@ const AllProducts: React.FC = () => {
                             )}
                           </p>
 
-                          {product.createdAt && (
-                            <p className="mt-2 text-xs text-gray-500 dark:text-gray-500 italic">
-                              Posted: {formatDate(product.createdAt)}
-                            </p>
-                          )}
-
                           {product.stockTotal > 0 && (
                             <div className="mt-4">
                               <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5 overflow-hidden">
@@ -262,7 +256,7 @@ const AllProducts: React.FC = () => {
                       </Link>
 
                       {/* ACTIONS & CONTACT BUTTON */}
-                      <div className="px-5 pb-6">
+                      <div className="px-[2.5rem] pb-6">
                         {!isOwner && (
                           <button
                             onClick={() => {
@@ -273,7 +267,7 @@ const AllProducts: React.FC = () => {
                               if (whatsappLink)
                                 window.open(whatsappLink, "_blank");
                             }}
-                            className={`w-full px-5 py-3 rounded-lg text-center font-medium shadow-md transition-all ${
+                            className={`w-full px-3 py-3 rounded-lg text-center font-medium shadow-md transition-all ${
                               user
                                 ? "bg-green-500 hover:bg-green-600 text-white"
                                 : "bg-gray-300 dark:bg-gray-700 text-gray-600 dark:text-gray-400 cursor-not-allowed"
@@ -285,31 +279,57 @@ const AllProducts: React.FC = () => {
                           </button>
                         )}
 
+                        {!isOwner && user && (
+                          <button
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+                              isFavourite
+                                ? dispatch(removeFavourite(product.id))
+                                : dispatch(addFavourite(product.id));
+                            }}
+                            className="
+        absolute 
+        p-2.5
+        bg-transparent
+        rounded-full
+        hover:scale-110
+        active:scale-95
+        transition-all duration-200
+        z-20
+      "
+                          >
+                            <Heart
+                              size={22}
+                              className={
+                                isFavourite
+                                  ? "fill-red-500 text-red-500"
+                                  : "text-gray-600 dark:text-gray-400"
+                              }
+                            />
+                          </button>
+                        )}
+                          {product.createdAt && (
+                            <p className="mt-4 text-xs text-gray-400 dark:text-gray-400 italic">
+                              Posted: {formatDate(product.createdAt)}
+                            </p>
+                          )}
+
                         {/* TOP-RIGHT ACTIONS */}
                         <div className="absolute top-3 right-3 z-20 flex flex-col items-end gap-2">
-                          {/* Favourite Button */}
-                          {!isOwner && user && (
-                            <button
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                // eslint-disable-next-line @typescript-eslint/no-unused-expressions
-                                isFavourite
-                                  ? dispatch(removeFavourite(product.id))
-                                  : dispatch(addFavourite(product.id));
-                              }}
-                              className="p-2.5 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-full shadow-lg hover:scale-110 transition-all"
-                            >
-                              <Heart
-                                size={22}
-                                className={
-                                  isFavourite
-                                    ? "fill-red-500 text-red-500"
-                                    : "text-gray-600 dark:text-gray-400"
-                                }
-                              />
-                            </button>
-                          )}
+                          {/* Discount Badge - only shown when there's a discount */}
+                          {product.discountPrice &&
+                            product.discountPrice < product.price && (
+                              <div className="bg-red-600 text-white text-xs font-bold px-2.5 py-1 rounded-full shadow-md">
+                               -{Math.round(
+                                  ((product.price - product.discountPrice) /
+                                    product.price) *
+                                    100
+                                )}
+                                % OFF
+                              </div>
+                            )}
 
                           {/* Owner Menu */}
                           {isOwner && (

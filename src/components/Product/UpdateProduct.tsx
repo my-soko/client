@@ -7,6 +7,7 @@ import {
 } from "../../redux/reducers/productReducer";
 import type { AppDispatch, RootState } from "../../redux/store";
 import { categories } from "../../util/Category";
+import { warrantyOptions } from "../../util/Warranty";
 
 const UpdateProduct: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -24,6 +25,7 @@ const UpdateProduct: React.FC = () => {
   const [price, setPrice] = useState(product?.price.toString() || "");
   const [category, setCategory] = useState(product?.category || "");
   const [brand, setBrand] = useState(product?.brand || "");
+  const [warranty, setWarranty] = useState(product?.warranty || "");
   const [condition, setCondition] = useState(product?.condition || "");
   const [mainImage, setMainImage] = useState<File | null>(null);
   const [previewImages, setPreviewImages] = useState<string[]>([]);
@@ -61,6 +63,7 @@ const UpdateProduct: React.FC = () => {
     formData.append("description", description);
     formData.append("category", category);
     formData.append("brand", brand);
+    formData.append("warranty", warranty);
     formData.append("condition", condition);
     formData.append("stockInCount", stockInCount);
     formData.append("status", status);
@@ -247,6 +250,27 @@ const UpdateProduct: React.FC = () => {
             <option className="dark:bg-gray-800" value="BRAND_NEW">Brand New</option>
             <option className="dark:bg-gray-800" value="SLIGHTLY_USED">Slightly Used</option>
             <option className="dark:bg-gray-800" value="REFURBISHED">Refurbished</option>
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-gray-700 dark:text-gray-300 font-medium mb-1">
+            Warranty
+          </label>
+          <select
+            value={warranty}
+            onChange={(e) => setWarranty(e.target.value)}
+            className="w-full border border-gray-300 dark:border-gray-600 p-3 rounded bg-transparent text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
+          >
+            {warrantyOptions.map((opt) => (
+              <option
+                key={opt.value}
+                value={opt.value}
+                className="dark:bg-gray-800"
+              >
+                {opt.label}
+              </option>
+            ))}
           </select>
         </div>
 

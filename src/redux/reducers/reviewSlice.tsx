@@ -24,6 +24,7 @@ const initialState: ReviewState = {
   userReview: null,
   loading: false,
   error: null,
+  length: 0
 };
 
 const API_URL = "http://localhost:5000/api/reviews";

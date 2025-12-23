@@ -116,14 +116,13 @@ const Footer: React.FC = () => {
       </div>
 
       {/* MARQUEE */}
-      <div className="overflow-hidden whitespace-nowrap py-4 border-t border-gray-800">
+      <div className="overflow-hidden whitespace-nowrap py-4">
         <div className="animate-marquee text-sm text-gray-400">
           ⭐ Buy & Sell Easily — Trusted by Thousands • Fast Deals • Secure
           Payments • MySoko Marketplace ⭐
         </div>
       </div>
 
-      {/* COPYRIGHT */}
       <div className="text-center py-5 text-sm text-gray-500 border-t border-gray-800">
         © {new Date().getFullYear()} MySoko. All rights reserved.
       </div>

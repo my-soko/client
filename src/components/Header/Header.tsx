@@ -28,14 +28,50 @@ const Header: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
   const { user } = useSelector((state: RootState) => state.auth);
   const favourites = useSelector(selectFavourites);
-  const { categoryFilter, filteredProducts, minPrice, maxPrice, sortBy, products } =
-    useSelector((state: RootState) => state.product);
+  const {
+    categoryFilter,
+    filteredProducts,
+    minPrice,
+    maxPrice,
+    sortBy,
+    products,
+  } = useSelector((state: RootState) => state.product);
 
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
 
   useEffect(() => {
     if (user) dispatch(fetchFavourites());
   }, [dispatch, user]);
+
+  const lastScrollY = React.useRef(0);
+  const ticking = React.useRef(false);
+  const [showTopBar, setShowTopBar] = React.useState(true);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (!ticking.current) {
+        window.requestAnimationFrame(() => {
+          const currentScrollY = window.scrollY;
+
+          if (currentScrollY > lastScrollY.current && currentScrollY > 80) {
+            // scrolling down → show
+            setShowTopBar(true);
+          } else {
+            // scrolling up → hide
+            setShowTopBar(false);
+          }
+
+          lastScrollY.current = currentScrollY;
+          ticking.current = false;
+        });
+
+        ticking.current = true;
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   // Product statistics
   const totalProducts = filteredProducts.length;
@@ -49,7 +85,6 @@ const Header: React.FC = () => {
     (p) => p.condition === "REFURBISHED"
   ).length;
 
-  // Real total sales: count products with status === "sold"
   const totalSales = products.filter((p) => p.status === "sold").length;
 
   const handleLogout = () => {
@@ -61,6 +96,23 @@ const Header: React.FC = () => {
 
   return (
     <header className="bg-white dark:bg-gray-900 shadow-md sticky top-0 z-50 border-b border-gray-200 dark:border-gray-700">
+      <div
+        className={`w-full bg-indigo-600 text-white text-sm transition-transform duration-300 ${
+          showTopBar ? "translate-y-0" : "-translate-y-full"
+        }`}
+      >
+        <div className="max-w-7xl mx-auto px-4 py-2 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <span>📞 +254 716 570 983</span>
+            <span className="hidden sm:inline">✉️ support@mysokochap.com</span>
+          </div>
+
+          <span className="hidden md:inline">
+            Fast • Secure • Trusted Marketplace
+          </span>
+        </div>
+      </div>
+
       {/* Main Top Bar */}
       <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-4">
         {/* Logo */}
@@ -72,7 +124,7 @@ const Header: React.FC = () => {
           }}
           className="text-2xl font-bold text-indigo-600 dark:text-indigo-400"
         >
-          MySoko
+          MySokoChap
         </Link>
 
         {/* Desktop Search & Filters */}
@@ -88,7 +140,10 @@ const Header: React.FC = () => {
             className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-transparent text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
             onChange={(e) => dispatch(setCategoryFilter(e.target.value))}
           >
-            <option value="" className="text-gray-900 dark:text-white dark:bg-gray-800">
+            <option
+              value=""
+              className="text-gray-900 dark:text-white dark:bg-gray-800"
+            >
               Category
             </option>
             {categories.map((cat) => (
@@ -106,7 +161,10 @@ const Header: React.FC = () => {
             className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-transparent text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
             onChange={(e) => dispatch(setBrandFilter(e.target.value))}
           >
-            <option value="" className="text-gray-900 dark:text-white dark:bg-gray-800">
+            <option
+              value=""
+              className="text-gray-900 dark:text-white dark:bg-gray-800"
+            >
               Brand
             </option>
             {categories
