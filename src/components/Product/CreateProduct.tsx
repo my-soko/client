@@ -1,26 +1,25 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import type { AppDispatch, RootState } from "../../redux/store";
-
 import { categories } from "../../util/Category";
 import PaymentForm from "../Payment/PaymentForm";
 import { createProduct } from "../../redux/reducers/productReducer";
-import { setFee } from "../../redux/reducers/paymentSlice";
+import { warrantyOptions } from "../../util/Warranty";
+import axios from "axios";
+
+const MAX_IMAGES = 5;
 
 const CreateProduct: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
-
-  const { loading, error } = useSelector((state: RootState) => state.product);
   const { user } = useSelector((state: RootState) => state.auth);
   const isAdmin = user?.role === "admin";
 
   const [showPayment, setShowPayment] = useState(false);
   const [formLocked, setFormLocked] = useState(false);
-  const [paymentDone, setPaymentDone] = useState(false);
-
-  const [tempProductData, setTempProductData] = useState<FormData | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [tempProductData, setTempProductData] = useState<any>(null);
   const [message, setMessage] = useState("");
 
   const [title, setTitle] = useState("");
@@ -30,140 +29,235 @@ const CreateProduct: React.FC = () => {
   const [stockInCount, setStockInCount] = useState("");
   const [category, setCategory] = useState("");
   const [brand, setBrand] = useState("");
-  const [condition, setCondition] = useState("BRAND_NEW");
+  const [warranty, setWarranty] = useState("");
+  const [condition, setCondition] = useState("");
   const [status, setStatus] = useState("onsale");
   const [quickSale, setQuickSale] = useState(false);
   const [whatsappNumber, setWhatsappNumber] = useState(
     user?.whatsappNumber || ""
   );
 
+  // Image states
   const [images, setImages] = useState<File[]>([]);
-  const [preview, setPreview] = useState<string[]>([]);
+  const [previews, setPreviews] = useState<string[]>([]);
 
-  // IMAGE UPLOAD
-  const handleImages = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Dynamic brands
+  const selectedCategoryBrands =
+    categories.find((cat) => cat.name === category)?.brands || [];
+
+  // Add new images
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files) return;
-    const files = Array.from(e.target.files);
-    setImages(files);
-    setPreview(files.map((file) => URL.createObjectURL(file)));
+
+    const newFiles = Array.from(e.target.files);
+    const availableSlots = MAX_IMAGES - images.length;
+
+    if (newFiles.length > availableSlots) {
+      setMessage(
+        `You can only add ${availableSlots} more image(s). Maximum ${MAX_IMAGES} images allowed.`
+      );
+      const allowedFiles = newFiles.slice(0, availableSlots);
+      addImages(allowedFiles);
+    } else {
+      setMessage("");
+      addImages(newFiles);
+    }
   };
 
-  // PRODUCT SUBMISSION
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!whatsappNumber.trim()) {
-      alert("Please add your WhatsApp number before proceeding.");
-      return;
-    }
-
-    const fd = new FormData();
-    fd.append("title", title);
-    fd.append("description", description);
-    fd.append("price", price);
-    fd.append("discountPrice", discountPrice);
-    fd.append("stockInCount", stockInCount);
-    fd.append("status", status);
-    fd.append("quickSale", quickSale.toString());
-    fd.append("category", category);
-    fd.append("brand", brand);
-    fd.append("condition", condition);
-    fd.append("whatsappNumber", whatsappNumber);
-
-    images.forEach((img) => fd.append("images", img));
-
-    setTempProductData(fd);
-    if (!isAdmin && !paymentDone) {
-      setFormLocked(true);
-      setShowPayment(true);
-      return;
-    }
-    processProductCreation(fd);
+  const addImages = (files: File[]) => {
+    const newPreviews = files.map((file) => URL.createObjectURL(file));
+    setImages((prev) => [...prev, ...files]);
+    setPreviews((prev) => [...prev, ...newPreviews]);
   };
 
-  const processProductCreation = async (formData: FormData) => {
+  // Remove image by index
+  const removeImage = (index: number) => {
+    setImages((prev) => prev.filter((_, i) => i !== index));
+    setPreviews((prev) => {
+      URL.revokeObjectURL(prev[index]); // Clean up memory
+      return prev.filter((_, i) => i !== index);
+    });
+    setMessage("");
+  };
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const processProductCreation = async (payload: any) => {
+    const formData = new FormData();
+    Object.entries(payload).forEach(([key, value]) => {
+      if (Array.isArray(value)) {
+        value.forEach((url: string) => formData.append("imageUrls", url));
+      } else if (value !== null && value !== undefined) {
+        formData.append(key, String(value));
+      }
+    });
+
     const result = await dispatch(createProduct(formData));
     if (createProduct.fulfilled.match(result)) {
-      setMessage("Product created successfully 🎉");
-      setTimeout(() => navigate("/"), 1000);
+      setMessage("Product created successfully!");
+      setTimeout(() => navigate("/"), 2000);
+    } else {
+      setMessage(result.payload?.message || "Failed to create product.");
     }
     setFormLocked(false);
   };
 
-  useEffect(() => {
-    if (!tempProductData) return;
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setMessage("");
+    setFormLocked(true);
 
-    const discount = Number(tempProductData.get("discountPrice"));
-    const price = Number(tempProductData.get("price"));
+    if (images.length === 0) {
+      setMessage("Please upload at least one product image.");
+      setFormLocked(false);
+      return;
+    }
 
-    const basePrice = discount || price;
+    if (images.length > MAX_IMAGES) {
+      setMessage(`Maximum ${MAX_IMAGES} images allowed.`);
+      setFormLocked(false);
+      return;
+    }
 
-    const fee = Math.max(1, Math.ceil(basePrice * 0.01));
+    if (!whatsappNumber.trim()) {
+      setMessage("Please provide your WhatsApp number.");
+      setFormLocked(false);
+      return;
+    }
 
-    dispatch(setFee({ basePrice, fee }));
-  }, [dispatch, tempProductData]);
+    if (
+      !title.trim() ||
+      !description.trim() ||
+      !price ||
+      !category ||
+      !brand ||
+      !condition
+    ) {
+      setMessage("Please fill in all required fields.");
+      setFormLocked(false);
+      return;
+    }
+
+    try {
+      setMessage("Uploading images...");
+      const uploadForm = new FormData();
+      images.forEach((img) => uploadForm.append("images", img));
+
+      const uploadRes = await axios.post(
+        "http://localhost:5000/api/upload/temp",
+        uploadForm,
+        {
+          headers: { "Content-Type": "multipart/form-data" },
+          timeout: 60000,
+        }
+      );
+
+      const uploadedUrls: string[] = uploadRes.data.urls;
+      if (!uploadedUrls || uploadedUrls.length === 0) {
+        throw new Error("No image URLs returned from server");
+      }
+
+      const productPayload = {
+        title: title.trim(),
+        description: description.trim(),
+        price: Number(price),
+        discountPrice: discountPrice ? Number(discountPrice) : null,
+        stockInCount: Number(stockInCount) || 1,
+        category,
+        brand,
+        warranty: warranty || null,
+        condition,
+        whatsappNumber: whatsappNumber.trim(),
+        imageUrls: uploadedUrls,
+        status,
+        quickSale,
+      };
+
+      if (isAdmin) {
+        setMessage("Creating product (Admin bypass)...");
+        await processProductCreation(productPayload);
+        return;
+      }
+
+      setTempProductData(productPayload);
+      setShowPayment(true);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (err: any) {
+      console.error(err);
+      setMessage(
+        err.response?.data?.message ||
+          err.message ||
+          "Upload failed. Please try again."
+      );
+      setFormLocked(false);
+    }
+  };
 
   return (
-    <div className="min-h-screen bg-gray-100 px-4 py-8">
-      {/* PAYMENT POPUP */}
+    <div className="min-h-screen bg-gray-50 dark:bg-slate-900 px-4 py-8">
+      {/* Payment Modal */}
       {showPayment && tempProductData && user && (
-        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-          <div className="bg-white p-5 rounded-xl shadow-xl w-full max-w-md relative">
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md p-8 relative">
             <button
               onClick={() => {
                 setShowPayment(false);
                 setFormLocked(false);
               }}
-              className="absolute top-3 right-3 text-red-500 font-bold"
+              className="absolute top-4 right-4 text-gray-500 dark:text-gray-400 text-2xl font-bold hover:text-red-600 transition"
             >
               ✕
             </button>
-
+            <h3 className="text-2xl font-bold text-center mb-6 text-gray-900 dark:text-white">
+              Complete Payment
+            </h3>
             <PaymentForm
               userId={user.id}
               productId="temp"
               productData={tempProductData}
               onSuccess={() => {
-                setPaymentDone(true);
-                setFormLocked(false);
                 setShowPayment(false);
+                setFormLocked(false);
                 setMessage(
-                  "Payment successful! You can now complete your product listing."
+                  "Payment successful! Your product has been posted automatically."
                 );
+                setTimeout(() => navigate("/"), 3000);
               }}
             />
           </div>
         </div>
       )}
 
-      {/* BACK BUTTON */}
-      <button
-        onClick={() => navigate("/")}
-        className="flex items-center text-blue-600 mb-6 hover:underline"
-      >
-        <span className="text-2xl mr-1">←</span> Back to Home
-      </button>
+      {/* Back Button */}
+      <div className="max-w-2xl mx-auto mb-8">
+        <button
+          onClick={() => navigate("/")}
+          className="flex items-center gap-2 text-lg font-medium text-indigo-600 dark:text-indigo-400 hover:underline"
+        >
+          <span className="text-3xl">←</span> Back to Home
+        </button>
+      </div>
 
-      {/* FORM */}
-      <div className="max-w-2xl mx-auto bg-white p-8 rounded-2xl shadow">
-        <h2 className="text-3xl font-bold text-center mb-6">Create Product</h2>
-        <p className="text-green-600 font-bold text-lg">
-          Please ensure you post products related to the categories given to
-          avoid removal of your product from our listing
-        </p>
+      {/* Main Form */}
+      <div className="max-w-2xl mx-auto bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 md:p-10">
+        <h2 className="text-3xl md:text-4xl font-bold text-center mb-6 text-gray-900 dark:text-white">
+          Create Product Listing
+        </h2>
 
         {message && (
-          <p className="text-green-600 bg-green-100 p-2 rounded text-center">
+          <div
+            className={`p-4 rounded-lg text-center font-medium text-lg mb-6 ${
+              message.includes("successfully") ||
+              message.includes("Payment successful")
+                ? "bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-300"
+                : "bg-red-100 dark:bg-red-900/50 text-red-800 dark:text-red-400"
+            }`}
+          >
             {message}
-          </p>
-        )}
-        {error && (
-          <p className="text-red-600 bg-red-100 p-2 rounded text-center">
-            {error}
-          </p>
+          </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-5">
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Other fields unchanged */}
           <input
             type="text"
             placeholder="Product Title"
@@ -171,35 +265,36 @@ const CreateProduct: React.FC = () => {
             onChange={(e) => setTitle(e.target.value)}
             required
             disabled={formLocked}
-            className="w-full border p-3 rounded"
+            className="w-full px-5 py-4 border rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
           />
+
           <textarea
-            placeholder="Description"
-            rows={4}
+            placeholder="Detailed Description"
+            rows={5}
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             required
             disabled={formLocked}
-            className="w-full border p-3 rounded"
+            className="w-full px-5 py-4 border rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none resize-none"
           />
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <input
               type="number"
-              placeholder="Price"
+              placeholder="Regular Price (KSH)"
               value={price}
               onChange={(e) => setPrice(e.target.value)}
               required
               disabled={formLocked}
-              className="w-full border p-3 rounded"
+              className="px-5 py-4 border rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
             />
             <input
               type="number"
-              placeholder="Discount Price (optional)"
+              placeholder="Discount Price (Optional)"
               value={discountPrice}
               onChange={(e) => setDiscountPrice(e.target.value)}
               disabled={formLocked}
-              className="w-full border p-3 rounded"
+              className="px-5 py-4 border rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
             />
           </div>
 
@@ -210,130 +305,205 @@ const CreateProduct: React.FC = () => {
             onChange={(e) => setStockInCount(e.target.value)}
             required
             disabled={formLocked}
-            className="w-full border p-3 rounded"
+            className="w-full px-5 py-4 border rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
           />
 
+          {/* Category */}
           <select
-            value={status}
-            onChange={(e) => setStatus(e.target.value)}
+            value={category}
+            onChange={(e) => {
+              setCategory(e.target.value);
+              setBrand("");
+            }}
+            required
             disabled={formLocked}
-            className="w-full border p-3 rounded"
+            className="w-full px-5 py-4 border rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
           >
-            <option value="onsale">On Sale</option>
-            <option value="sold">Sold</option>
+            <option className="dark:bg-slate-900" value="">
+              Select Category
+            </option>
+            {categories.map((cat) => (
+              <option
+                className="dark:bg-slate-900"
+                key={cat.name}
+                value={cat.name}
+              >
+                {cat.name}
+              </option>
+            ))}
           </select>
 
-          <label className="flex items-center space-x-3">
-            <input
-              type="checkbox"
-              checked={quickSale}
-              onChange={(e) => setQuickSale(e.target.checked)}
-              disabled={formLocked}
-            />
-            <span>Quick Sale</span>
-          </label>
+          {/* Brand */}
+          <select
+            value={brand}
+            onChange={(e) => setBrand(e.target.value)}
+            required
+            disabled={!category || formLocked}
+            className="w-full px-5 py-4 border rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none disabled:opacity-60"
+          >
+            <option className="dark:bg-slate-900" value="">
+              {category ? "Select Brand" : "Select Category First"}
+            </option>
+            {selectedCategoryBrands.map((b) => (
+              <option className="dark:bg-slate-900" key={b} value={b}>
+                {b}
+              </option>
+            ))}
+          </select>
 
-          {/* CATEGORY SELECT */}
-          <div>
-            <label className="block text-gray-700 font-medium mb-1">
-              Category
-            </label>
+          {/* Condition & Warranty */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <select
-              value={category}
-              onChange={(e) => {
-                setCategory(e.target.value);
-                setBrand(""); // reset brand when category changes
-              }}
+              value={condition}
+              onChange={(e) => setCondition(e.target.value)}
               required
-              disabled={formLocked} // for CreateProduct
-              className="w-full border p-3 rounded"
+              disabled={formLocked}
+              className="px-5 py-4 border rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
             >
-              <option value="">Choose Category</option>
-              {categories.map((cat) => (
-                <option key={cat.name} value={cat.name}>
-                  {cat.name}
+              <option className="dark:bg-slate-900" value="">
+                Select Condition
+              </option>
+              <option className="dark:bg-slate-900" value="BRAND_NEW">
+                Brand New
+              </option>
+              <option className="dark:bg-slate-900" value="SLIGHTLY_USED">
+                Slightly Used
+              </option>
+              <option className="dark:bg-slate-900" value="REFURBISHED">
+                Refurbished
+              </option>
+            </select>
+
+            <select
+              value={warranty}
+              onChange={(e) => setWarranty(e.target.value)}
+              disabled={formLocked}
+              className="px-5 py-4 border rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
+            >
+              <option className="dark:bg-slate-900" value="">
+                No Warranty
+              </option>
+              {warrantyOptions.map((opt) => (
+                <option
+                  className="dark:bg-slate-900"
+                  key={opt.value}
+                  value={opt.value}
+                >
+                  {opt.label}
                 </option>
               ))}
             </select>
           </div>
 
-          {/* BRAND SELECT */}
-          <div>
-            <label className="block text-gray-700 font-medium mb-1">
-              Brand
+          {/* Quick Sale & Status */}
+          <div className="flex flex-col sm:flex-row gap-6 items-center">
+            <label className="flex items-center gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={quickSale}
+                onChange={(e) => setQuickSale(e.target.checked)}
+                disabled={formLocked}
+                className="w-6 h-6 text-indigo-600 rounded focus:ring-indigo-500"
+              />
+              <span className="text-lg font-medium">Quick Sale</span>
             </label>
+
             <select
-              value={brand}
-              onChange={(e) => setBrand(e.target.value)}
-              required
-              disabled={formLocked || !category} // disable if no category
-              className="w-full border p-3 rounded"
+              value={status}
+              onChange={(e) => setStatus(e.target.value)}
+              disabled={formLocked}
+              className="px-5 py-4 border rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
             >
-              <option value="">Choose Brand</option>
-              {category &&
-                categories
-                  .find((c) => c.name === category)
-                  ?.brands.map((bnd) => (
-                    <option key={bnd} value={bnd}>
-                      {bnd}
-                    </option>
-                  ))}
+              <option className="dark:bg-slate-900" value="onsale">
+                On Sale
+              </option>
+              <option className="dark:bg-slate-900" value="sold">
+                Sold
+              </option>
             </select>
           </div>
 
-          <select
-            name="condition"
-            value={condition}
-            onChange={(e) => setCondition(e.target.value)}
-            required
-            disabled={formLocked}
-            className="w-full border p-3 rounded"
-          >
-            <option value="">Choose Product Condition</option>
-            <option value="BRAND_NEW">Brand New</option>
-            <option value="SLIGHTLY_USED">Slightly Used</option>
-            <option value="REFURBISHED">Refurbished</option>
-          </select>
-
+          {/* WhatsApp */}
           <input
             type="text"
-            placeholder="WhatsApp Number"
+            placeholder="WhatsApp Number (e.g. +254712345678)"
             value={whatsappNumber}
             onChange={(e) => setWhatsappNumber(e.target.value)}
             required
             disabled={formLocked}
-            className="w-full border p-3 rounded"
+            className="w-full px-5 py-4 border rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
           />
 
-          <input
-            type="file"
-            multiple
-            accept="image/*"
-            onChange={handleImages}
-            required
-            disabled={formLocked}
-            className="w-full"
-          />
+          {/* Image Upload Section */}
+          <div>
+            <label className="block text-lg font-medium mb-3">
+              Product Images (Max {MAX_IMAGES})
+            </label>
 
-          {/* IMAGE PREVIEW */}
-          {preview.length > 0 && (
-            <div className="grid grid-cols-3 gap-3 mt-4">
-              {preview.map((src, i) => (
-                <img
-                  key={i}
-                  src={src}
-                  className="w-full h-28 object-cover rounded border"
-                />
-              ))}
-            </div>
-          )}
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+              {images.length > 0
+                ? `${images.length}/${MAX_IMAGES} images selected`
+                : "No images selected yet"}
+            </p>
+
+            {/* File Input */}
+            {images.length < MAX_IMAGES && (
+              <input
+                type="file"
+                multiple
+                accept="image/*"
+                onChange={handleImageChange}
+                disabled={formLocked}
+                className="w-full text-gray-700 dark:text-gray-200 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-indigo-600 file:text-white hover:file:bg-indigo-700 disabled:file:bg-gray-400"
+              />
+            )}
+
+            {images.length >= MAX_IMAGES && (
+              <p className="text-sm text-orange-600 dark:text-orange-400 mt-3">
+                Maximum {MAX_IMAGES} images reached. Remove some to add new
+                ones.
+              </p>
+            )}
+
+            {/* Image Previews */}
+            {previews.length > 0 && (
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-5 mt-6">
+                {previews.map((src, index) => (
+                  <div key={index} className="relative group">
+                    <img
+                      src={src}
+                      alt={`Preview ${index + 1}`}
+                      className="w-full h-40 object-cover rounded-lg border-2 border-gray-300 dark:border-gray-600 shadow-md"
+                    />
+
+                    {/* Cover Badge */}
+                    {index === 0 && (
+                      <span className="absolute top-2 left-2 bg-green-600 text-white text-xs px-3 py-1 rounded">
+                        Cover
+                      </span>
+                    )}
+
+                    {/* Remove Button */}
+                    <button
+                      type="button"
+                      onClick={() => removeImage(index)}
+                      disabled={formLocked}
+                      className="absolute top-2 right-2 bg-red-600 text-white text-xs px-3 py-1 rounded opacity-0 group-hover:opacity-100 transition hover:bg-red-700"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
 
           <button
             type="submit"
-            disabled={loading || formLocked}
-            className="w-full bg-blue-600 text-white p-3 rounded disabled:bg-gray-400"
+            disabled={formLocked || images.length === 0}
+            className="w-full py-4 bg-indigo-600 text-white font-bold text-xl rounded-xl hover:bg-indigo-700 disabled:bg-gray-400 transition shadow-lg"
           >
-            {loading ? "Processing..." : "Create Product"}
+            {formLocked ? "Processing..." : "Create Product"}
           </button>
         </form>
       </div>

@@ -37,21 +37,25 @@ const VerifyEmail = () => {
   }, [token]);
 
   return (
-    <div className="min-h-screen flex flex-col justify-center items-center bg-gray-100 p-4">
+    <div className="min-h-screen flex flex-col justify-center items-center bg-gray-100 dark:bg-slate-900 p-4">
       {/* Loading State */}
       {status === "loading" && (
-        <p className="text-lg text-gray-600">Verifying your email...</p>
+        <p className="text-lg text-gray-600 dark:text-gray-300">
+          Verifying your email...
+        </p>
       )}
 
       {/* Success State */}
       {status === "success" && (
-        <div className="bg-white p-8 rounded-xl shadow-lg text-center max-w-md w-full">
-          <h1 className="text-3xl font-bold text-green-600 mb-3">✅ Verified!</h1>
-          <p className="text-gray-700">{message}</p>
+        <div className="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-2xl text-center max-w-md w-full border border-gray-200 dark:border-gray-700">
+          <h1 className="text-3xl font-bold text-green-600 dark:text-green-400 mb-3">
+            ✅ Verified!
+          </h1>
+          <p className="text-gray-700 dark:text-gray-300">{message}</p>
 
           <Link
             to="/login"
-            className="mt-6 inline-block bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition"
+            className="mt-6 inline-block bg-green-600 dark:bg-green-500 text-white px-6 py-3 rounded-lg hover:bg-green-700 dark:hover:bg-green-400 transition font-medium"
           >
             Go to Login
           </Link>
@@ -60,15 +64,15 @@ const VerifyEmail = () => {
 
       {/* Error State */}
       {status === "error" && (
-        <div className="bg-white p-8 rounded-xl shadow-lg text-center max-w-md w-full">
-          <h1 className="text-3xl font-bold text-red-600 mb-3">
+        <div className="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-2xl text-center max-w-md w-full border border-gray-200 dark:border-gray-700">
+          <h1 className="text-3xl font-bold text-red-600 dark:text-red-400 mb-3">
             ❌ Verification Failed
           </h1>
-          <p className="text-gray-700">{message}</p>
+          <p className="text-gray-700 dark:text-gray-300">{message}</p>
 
           <Link
             to="/register"
-            className="mt-6 inline-block bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition"
+            className="mt-6 inline-block bg-red-600 dark:bg-red-500 text-white px-6 py-3 rounded-lg hover:bg-red-700 dark:hover:bg-red-400 transition font-medium"
           >
             Try Again
           </Link>

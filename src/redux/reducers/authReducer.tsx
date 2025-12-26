@@ -28,12 +28,10 @@ interface AuthState {
 
 const initialState: AuthState = {
   user: null,
-  loading: false,
+  loading: true,
   error: null,
   isAuthenticated: false,
 };
-
-// ====================== THUNKS ======================
 
 // REGISTER
 export const registerUser = createAsyncThunk<
@@ -110,7 +108,9 @@ export const fetchProfile = createAsyncThunk<User>(
   "auth/fetchProfile",
   async (_, { rejectWithValue }) => {
     try {
-      const res = await axios.get(`${API_URL}/profileInfo`, { withCredentials: true });
+      const res = await axios.get(`${API_URL}/profileInfo`, {
+        withCredentials: true,
+      });
       const user = res.data.user;
       return {
         id: user.id,
@@ -121,11 +121,12 @@ export const fetchProfile = createAsyncThunk<User>(
         image: user.profilePicture, // map profilePicture → image
       };
     } catch (err: any) {
-      return rejectWithValue(err.response?.data?.message || "Failed to load profile");
+      return rejectWithValue(
+        err.response?.data?.message || "Failed to load profile"
+      );
     }
   }
 );
-
 
 // UPDATE PROFILE
 export const updateUserProfile = createAsyncThunk<
@@ -190,9 +191,7 @@ const authSlice = createSlice({
           role: action.payload.role,
           whatsappNumber: action.payload.whatsappNumber,
           // Use profilePicture from backend, fallback to picture from Google if empty
-          image:
-            action.payload.profilePicture ||
-            action.payload.picture,
+          image: action.payload.profilePicture || action.payload.picture,
         };
         state.isAuthenticated = true;
       })
@@ -225,6 +224,12 @@ const authSlice = createSlice({
       .addCase(fetchProfile.fulfilled, (state, action: PayloadAction<User>) => {
         state.user = action.payload;
         state.isAuthenticated = true;
+        state.loading = false;
+      })
+      .addCase(fetchProfile.rejected, (state) => {
+        state.user = null;
+        state.isAuthenticated = false;
+        state.loading = false;
       })
 
       // UPDATE PROFILE

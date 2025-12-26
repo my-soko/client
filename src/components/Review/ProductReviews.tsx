@@ -29,27 +29,28 @@ const ProductReviews: React.FC<{
     Array.from({ length: 5 }, (_, i) => (
       <span
         key={i}
-        className={i < rating ? "text-yellow-400" : "text-gray-300"}
+        className={i < rating ? "text-yellow-400" : "text-gray-300 dark:text-gray-600"}
       >
         ★
       </span>
     ));
 
   return (
-    <div className="mt-10 bg-gray-50 p-6 rounded-xl shadow-inner border border-gray-200">
-      <h3 className="text-2xl font-bold mb-4 border-b pb-2">
+    <div className="mt-10 bg-gray-100 dark:bg-gray-800 p-6 rounded-xl shadow-inner border border-gray-200 dark:border-gray-700">
+      <h3 className="text-2xl font-bold mb-4 border-b pb-2 text-gray-900 dark:text-white">
         Customer Reviews
       </h3>
-      {/* ⭐ Add Review Section - Same logic as WhatsApp button */}
+
+      {/* Add Review Section */}
       {!isOwner && (
         <>
           {userReview ? (
-            <p className="mb-4 text-green-600 font-medium">
+            <p className="mb-4 text-green-600 dark:text-green-400 font-medium">
               You have already reviewed this product.
             </p>
           ) : (
             <button
-              className="mb-6 bg-indigo-600 text-white px-5 py-2 rounded-lg shadow hover:bg-indigo-700 transition"
+              className="mb-6 bg-indigo-600 dark:bg-indigo-500 text-white px-5 py-2 rounded-lg shadow hover:bg-indigo-700 dark:hover:bg-indigo-400 transition"
               onClick={() => setShowPopup(true)}
             >
               Add Review
@@ -65,19 +66,19 @@ const ProductReviews: React.FC<{
         />
       )}
 
-      {/* ⭐ Reviews List */}
+      {/* Reviews List */}
       {reviews.length === 0 ? (
-        <p className="text-gray-500">No reviews yet.</p>
+        <p className="text-gray-500 dark:text-gray-400">No reviews yet.</p>
       ) : (
-        <div className="max-h-80 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-200">
+        <div className="max-h-80 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-400 dark:scrollbar-thumb-gray-600 scrollbar-track-gray-200 dark:scrollbar-track-gray-900">
           <div className="flex flex-col gap-4">
             {reviews.map((r) => (
               <div
                 key={r.id}
-                className="p-4  shadow-sm hover:shadow-md transition bg-white"
+                className="p-4 bg-white dark:bg-gray-700 shadow-sm hover:shadow-md transition rounded-lg"
               >
                 <div className="flex items-center gap-3 mb-2">
-                  <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-200 flex-shrink-0">
+                  <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-600 flex-shrink-0">
                     {r.user?.profilePicture ? (
                       <img
                         src={r.user.profilePicture}
@@ -85,21 +86,21 @@ const ProductReviews: React.FC<{
                         className="w-full h-full object-cover"
                       />
                     ) : (
-                      <span className="text-gray-500 flex items-center justify-center h-full font-bold">
+                      <span className="text-gray-500 dark:text-gray-300 flex items-center justify-center h-full font-bold">
                         {r.user?.fullName?.charAt(0) || "A"}
                       </span>
                     )}
                   </div>
 
                   <div>
-                    <p className="font-semibold text-gray-800">
+                    <p className="font-semibold text-gray-800 dark:text-gray-100">
                       {r.user?.fullName || "Anonymous"}
                     </p>
                     <div className="flex">{renderStars(r.rating)}</div>
                   </div>
                 </div>
 
-                <p className="text-gray-700 mt-1">{r.comment}</p>
+                <p className="text-gray-700 dark:text-gray-300 mt-1">{r.comment}</p>
               </div>
             ))}
           </div>

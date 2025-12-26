@@ -9,16 +9,18 @@ const TermsPopup: React.FC<TermsPopupProps> = ({ open, onClose }) => {
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center p-4 z-50">
-      <div className="bg-white w-full max-w-lg p-6 rounded-xl shadow-xl overflow-y-auto max-h-[80vh]">
-        <h2 className="text-2xl font-bold mb-4">Terms & Conditions</h2>
+    <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex justify-center items-center p-4 z-50">
+      <div className="bg-white dark:bg-gray-800 w-full max-w-lg p-6 rounded-xl shadow-2xl overflow-y-auto max-h-[80vh] border border-gray-200 dark:border-gray-700">
+        <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">
+          Terms & Conditions
+        </h2>
 
-        <p className="text-gray-700 mb-4">
-          Welcome to My-Soko! Before creating your account, please read the
+        <p className="text-gray-700 dark:text-gray-300 mb-4">
+          Welcome to MySoko! Before creating your account, please read the
           following terms carefully.
         </p>
 
-        <ul className="list-disc pl-5 space-y-2 text-gray-700">
+        <ul className="list-disc pl-5 space-y-2 text-gray-700 dark:text-gray-300">
           <li>You agree to provide accurate registration information.</li>
           <li>
             You are responsible for maintaining the confidentiality of your
@@ -29,7 +31,7 @@ const TermsPopup: React.FC<TermsPopupProps> = ({ open, onClose }) => {
             activity.
           </li>
           <li>
-            My-Soko reserves the right to suspend accounts violating our
+            MySoko reserves the right to suspend accounts violating our
             policies.
           </li>
           <li>
@@ -39,7 +41,7 @@ const TermsPopup: React.FC<TermsPopupProps> = ({ open, onClose }) => {
 
         <button
           onClick={onClose}
-          className="mt-6 w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg"
+          className="mt-6 w-full bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-400 text-white py-2 rounded-lg font-medium transition"
         >
           Close
         </button>

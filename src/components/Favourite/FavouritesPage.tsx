@@ -25,20 +25,24 @@ const FavouritesPage: React.FC = () => {
     Array.from({ length: 5 }, (_, i) => (
       <span
         key={i}
-        className={i < rating ? "text-yellow-500" : "text-gray-300"}
+        className={i < rating ? "text-yellow-400" : "text-gray-300 dark:text-gray-600"}
       >
         ★
       </span>
     ));
 
   if (!user)
-    return <p className="p-6 text-center">Login to view your favourites</p>;
+    return (
+      <div className="p-6 text-center text-gray-700 dark:text-gray-300 text-lg">
+        Login to view your favourites
+      </div>
+    );
 
   if (favourites.length === 0)
     return (
-      <div>
+      <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-slate-900">
         <Header />
-        <div className="p-6 text-center text-gray-700 text-lg">
+        <div className="flex-1 p-6 text-center text-gray-700 dark:text-gray-300 text-xl">
           No favourite products yet.
         </div>
         <Footer />
@@ -46,19 +50,19 @@ const FavouritesPage: React.FC = () => {
     );
 
   return (
-    <div>
+    <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-slate-900">
       <Header />
-      <div className="p-6 max-w-7xl mx-auto">
+      <div className="flex-1 p-6 max-w-7xl mx-auto">
         <button
           onClick={() => navigate("/")}
-          className="flex items-center text-blue-600 mb-6"
+          className="flex items-center text-indigo-600 dark:text-indigo-400 mb-8 hover:underline font-medium text-lg"
         >
-          <span className="text-2xl mr-1 font-bold hover:underline">
-            ← Back Home
-          </span>
+          <span className="text-3xl mr-2 font-bold">←</span> Back Home
         </button>
 
-        <h1 className="text-2xl font-bold mb-6">Your Favourites</h1>
+        <h1 className="text-3xl font-bold mb-8 text-gray-900 dark:text-white">
+          Your Favourites
+        </h1>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
           {favourites.map((fav) => {
@@ -66,9 +70,7 @@ const FavouritesPage: React.FC = () => {
             const isOwner = user?.id === product.sellerId;
             const whatsappLink =
               !isOwner && product.seller?.whatsappNumber
-                ? `https://wa.me/${
-                    product.seller.whatsappNumber
-                  }?text=${encodeURIComponent(
+                ? `https://wa.me/${product.seller.whatsappNumber}?text=${encodeURIComponent(
                     `Hello ${product.seller.fullName}, my name is ${user.fullName}. I came across your product "${product.title}" and I'm interested.`
                   )}`
                 : null;
@@ -76,17 +78,17 @@ const FavouritesPage: React.FC = () => {
             return (
               <div
                 key={fav.id}
-                className="bg-white border rounded-xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden group relative"
+                className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-md hover:shadow-2xl dark:hover:shadow-gray-900 transition-all duration-300 overflow-hidden group relative"
               >
                 <Link to={`/product/${product.id}`}>
-                  <div className="aspect-[4/3] bg-gray-100 overflow-hidden relative">
+                  <div className="aspect-[4/3] bg-gray-100 dark:bg-gray-700 overflow-hidden relative">
                     {product.quickSale && product.status !== "sold" && (
-                      <span className="absolute top-3 left-3 bg-red-600 text-white text-xs font-bold px-3 py-1 rounded-full shadow-md flex items-center gap-1 animate-pulse">
+                      <span className="absolute top-3 left-3 bg-red-600 text-white text-xs font-bold px-3 py-1 rounded-full shadow-md flex items-center gap-1 animate-pulse z-10">
                         🔥 Quick Sale
                       </span>
                     )}
                     {product.status === "sold" && (
-                      <span className="absolute top-3 left-3 bg-black text-white text-xs font-bold px-3 py-1 rounded-full shadow-md flex items-center gap-1">
+                      <span className="absolute top-3 left-3 bg-black text-white text-xs font-bold px-3 py-1 rounded-full shadow-md flex items-center gap-1 z-10">
                         ❌ Sold
                       </span>
                     )}
@@ -94,70 +96,71 @@ const FavouritesPage: React.FC = () => {
                       <img
                         src={product.imageUrl}
                         alt={product.title}
-                        className="w-full h-full mt-2 object-cover group-hover:scale-105 transition-transform duration-300"
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                       />
                     ) : (
-                      <div className="flex items-center justify-center h-full text-gray-400">
+                      <div className="flex items-center justify-center h-full text-gray-400 dark:text-gray-500 font-medium">
                         No Image
                       </div>
                     )}
                   </div>
 
-                  <div className="p-4">
-                    <h2 className="text-lg font-semibold truncate">
+                  <div className="p-5">
+                    <h2 className="text-lg font-semibold truncate text-gray-900 dark:text-white">
                       {product.title}
                     </h2>
-                    <p className="text-gray-600 text-sm mt-1 line-clamp-2">
+                    <p className="text-gray-600 dark:text-gray-400 text-sm mt-1 line-clamp-2">
                       {product.description}
                     </p>
+
                     {product.averageRating !== undefined && (
-                      <div className="flex items-center gap-2 mt-2">
-                        <div className="flex text-lg">
-                          {renderStars(Math.round(product.averageRating))}
-                        </div>
-                        <span className="text-sm text-gray-600">
+                      <div className="flex items-center gap-2 mt-3">
+                        <div className="flex text-lg">{renderStars(Math.round(product.averageRating))}</div>
+                        <span className="text-sm text-gray-600 dark:text-gray-400">
                           ({product.totalReviews || 0})
                         </span>
                       </div>
                     )}
 
-                    <div className="mt-3">
+                    <div className="mt-4">
                       {product.discountPrice ? (
                         <div className="flex flex-col">
-                          <span className="text-red-600 font-extrabold text-lg">
+                          <span className="text-xl font-bold text-red-600 dark:text-red-500">
                             KSH {product.discountPrice.toLocaleString()}
                           </span>
-                          <span className="text-gray-500 line-through text-sm">
+                          <span className="text-sm text-gray-500 dark:text-gray-400 line-through">
                             KSH {product.price.toLocaleString()}
                           </span>
                         </div>
                       ) : (
-                        <span className="text-indigo-600 font-extrabold text-lg">
-                          KSH {product.price}
+                        <span className="text-xl font-bold text-indigo-600 dark:text-indigo-400">
+                          KSH {product.price.toLocaleString()}
                         </span>
                       )}
                     </div>
 
-                    <p className="mt-3 text-gray-800 text-lg">
+                    <p className="mt-5 text-gray-800 dark:text-gray-200">
                       <span className="font-semibold">Stock:</span>{" "}
                       {product.stockInCount > 0 ? (
-                        <span className="text-green-600 font-semibold">
+                        <span className="text-green-600 dark:text-green-400 font-semibold">
                           {product.stockInCount} available
                         </span>
                       ) : (
-                        <span className="text-red-600 font-semibold">
+                        <span className="text-red-600 dark:text-red-400 font-semibold">
                           Out of stock
                         </span>
                       )}
                     </p>
                   </div>
                 </Link>
+
                 {/* Favourite Button */}
                 <div className="absolute top-3 right-3 z-20">
                   {user && !isOwner && (
                     <button
                       onClick={(e) => {
                         e.preventDefault();
+                        e.stopPropagation();
                         const isFav = favourites.some(
                           (f) => f.productId === product.id
                         );
@@ -167,35 +170,37 @@ const FavouritesPage: React.FC = () => {
                           dispatch(addFavourite(product.id));
                         }
                       }}
-                      className="p-2 rounded-full bg-white shadow-md hover:bg-gray-100 transition"
+                      className="p-2.5 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-full shadow-lg hover:scale-110 transition-all"
                     >
                       <Heart
                         size={24}
-                        className={`transition ${
+                        className={
                           favourites.some((f) => f.productId === product.id)
                             ? "fill-red-500 text-red-500"
-                            : "text-gray-500"
-                        }`}
+                            : "text-gray-600 dark:text-gray-400"
+                        }
                       />
                     </button>
                   )}
                 </div>
 
                 {/* Contact Seller */}
-                <div className="p-4 flex flex-col gap-2">
+                <div className="px-5 pb-6">
                   {!isOwner && (
                     <button
-                      onClick={() => {
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
                         if (!user) {
                           navigate("/login");
                           return;
                         }
                         if (whatsappLink) window.open(whatsappLink, "_blank");
                       }}
-                      className={`px-4 py-2 rounded-lg text-center shadow transition ${
+                      className={`w-full px-5 py-3 rounded-lg text-center font-medium shadow-md transition-all ${
                         user
-                          ? "bg-green-500 text-white hover:bg-green-600"
-                          : "bg-gray-300 text-gray-600"
+                          ? "bg-green-500 hover:bg-green-600 text-white"
+                          : "bg-gray-300 dark:bg-gray-700 text-gray-600 dark:text-gray-400 cursor-not-allowed"
                       }`}
                     >
                       {user ? "Contact Seller" : "Login to Contact Seller"}

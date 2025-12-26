@@ -1,9 +1,11 @@
+// src/components/Product/ProductDetail.tsx
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { fetchProductById } from "../../redux/reducers/productReducer";
 import type { AppDispatch, RootState } from "../../redux/store";
 import ProductReviews from "../Review/ProductReviews";
+import { formatDate } from "../../util/FormDate";
 
 const ProductDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -22,25 +24,40 @@ const ProductDetail: React.FC = () => {
   }, [dispatch, id]);
 
   useEffect(() => {
-    if (currentProduct) {
+    if (currentProduct?.imageUrl) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setMainImage(currentProduct.imageUrl);
     }
   }, [currentProduct]);
 
-  if (loading) return <p className="text-center mt-10">Loading product...</p>;
-  if (error) return <p className="text-red-500 text-center mt-10">{error}</p>;
+  if (loading)
+    return (
+      <div className="text-center py-20 text-gray-600 dark:text-gray-400 text-xl">
+        Loading product details...
+      </div>
+    );
+
+  if (error)
+    return (
+      <div className="text-center py-20 text-red-600 dark:text-red-400 text-xl">
+        {error}
+      </div>
+    );
+
   if (!currentProduct)
-    return <p className="text-center mt-10">Product not found.</p>;
+    return (
+      <div className="text-center py-20 text-gray-600 dark:text-gray-400 text-xl">
+        Product not found.
+      </div>
+    );
 
   const isOwner = user?.id === currentProduct.sellerId;
+  const isSold = currentProduct.status === "sold";
 
   const whatsappLink =
-    user && !isOwner && currentProduct.seller?.whatsappNumber
-      ? `https://wa.me/${
-          currentProduct.seller.whatsappNumber
-        }?text=${encodeURIComponent(
-          `Hello ${currentProduct.seller.fullName}, my name is ${user.fullName}. I saw your product "${currentProduct.title}" listed and I'm very interested in it. Could you please provide more details or confirm if it's still available? Thank you!`
+    user && !isOwner && currentProduct.seller?.whatsappNumber && !isSold
+      ? `https://wa.me/${currentProduct.seller.whatsappNumber}?text=${encodeURIComponent(
+          `Hello ${currentProduct.seller.fullName}, my name is ${user.fullName}. I saw your product "${currentProduct.title}" on MySoko and I'm very interested! Is it still available?`
         )}`
       : null;
 
@@ -52,103 +69,195 @@ const ProductDetail: React.FC = () => {
     if (whatsappLink) window.open(whatsappLink, "_blank");
   };
 
+  const allImages = [
+    currentProduct.imageUrl,
+    ...(currentProduct.images || []),
+  ].filter(Boolean) as string[];
+
   return (
-    <div className="max-w-5xl mx-auto p-6 mt-10 bg-white shadow-xl rounded-xl border border-gray-200">
-      <Link
-        to="/"
-        className="inline-block mb-4 text-indigo-600 hover:text-indigo-800 font-medium"
-      >
-        &larr; Back to All Products
-      </Link>
+    <div className="min-h-screen bg-gray-50 dark:bg-slate-900 py-8 px-4">
+      <div className="max-w-6xl mx-auto">
+        {/* Back Link */}
+        <Link
+          to="/"
+          className="inline-flex items-center gap-2 text-lg font-medium text-indigo-600 dark:text-indigo-400 hover:underline mb-8"
+        >
+          <span className="text-2xl">←</span> Back to All Products
+        </Link>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-        {/* LEFT IMAGES */}
-        <div>
-          <div className="w-full h-[420px] bg-gray-100 rounded-xl overflow-hidden shadow-md flex justify-center items-center">
-            <img
-              src={mainImage || currentProduct.imageUrl}
-              alt={currentProduct.title}
-              className="w-full h-full object-contain transition-all duration-300"
-            />
-          </div>
+        {/* Main Product Card */}
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl overflow-hidden border border-gray-200 dark:border-gray-700">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 p-8 lg:p-12">
+            {/* Images Section */}
+            <div className="space-y-6">
+              {/* Main Image */}
+              <div className="relative w-full h-[500px] bg-gray-100 dark:bg-gray-700 rounded-2xl overflow-hidden shadow-lg">
+                <img
+                  src={mainImage || currentProduct.imageUrl}
+                  alt={currentProduct.title}
+                  className="w-full h-full object-contain hover:scale-105 transition-transform duration-500"
+                />
+                {isSold && (
+                  <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                    <span className="text-white text-4xl font-bold">SOLD</span>
+                  </div>
+                )}
+              </div>
 
-          {currentProduct.images?.length > 0 && (
-            <div className="flex gap-3 mt-4 overflow-x-auto pb-2">
-              {[currentProduct.imageUrl, ...currentProduct.images].map(
-                (img, index) => (
-                  <button
-                    key={index}
-                    className={`w-20 h-20 flex-shrink-0 rounded-lg overflow-hidden border-2 ${
-                      mainImage === img
-                        ? "border-indigo-600"
-                        : "border-gray-300"
-                    }`}
-                    onClick={() => setMainImage(img)}
-                  >
-                    <img
-                      src={img}
-                      alt={`Thumbnail ${index}`}
-                      className="w-full h-full object-cover hover:opacity-75 transition"
-                    />
-                  </button>
-                )
+              {/* Thumbnails */}
+              {allImages.length > 1 && (
+                <div className="grid grid-cols-4 sm:grid-cols-5 gap-4">
+                  {allImages.map((img, index) => (
+                    <button
+                      key={index}
+                      onClick={() => setMainImage(img)}
+                      className={`relative aspect-square rounded-xl overflow-hidden border-4 transition-all ${
+                        mainImage === img
+                          ? "border-indigo-600 dark:border-indigo-400 shadow-lg scale-105"
+                          : "border-gray-300 dark:border-gray-600 hover:border-indigo-400 dark:hover:border-indigo-300"
+                      }`}
+                    >
+                      <img
+                        src={img}
+                        alt={`Thumbnail ${index + 1}`}
+                        className="w-full h-full object-cover"
+                      />
+                    </button>
+                  ))}
+                </div>
               )}
             </div>
-          )}
-        </div>
-        <div>
-          <h1 className="text-3xl font-bold text-gray-800">
-            {currentProduct.title}
-          </h1>
 
-          <p className="mt-3 text-gray-600 text-lg">
-            {currentProduct.description}
-          </p>
-          <div className="mt-4">
-            {currentProduct.discountPrice ? (
-              <>
-                <p className="text-3xl font-bold text-green-600">
-                  KSH {currentProduct.discountPrice.toLocaleString()}
+            <div className="flex flex-col justify-between">
+              <div>
+                <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">
+                  {currentProduct.title}
+                </h1>
+                <div className="flex flex-wrap gap-3 mb-6">
+                  {currentProduct.quickSale && !isSold && (
+                    <span className="bg-red-600 text-white px-4 py-2 rounded-full text-sm font-bold animate-pulse">
+                      🔥 Quick Sale
+                    </span>
+                  )}
+                  {currentProduct.condition && (
+                    <span
+                      className={`px-4 py-2 rounded-full text-sm font-semibold shadow-sm ${
+                        currentProduct.condition === "BRAND_NEW"
+                          ? "bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400"
+                          : currentProduct.condition === "SLIGHTLY_USED"
+                          ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-400"
+                          : "bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-400"
+                      }`}
+                    >
+                      {currentProduct.condition.replace("_", " ")}
+                    </span>
+                  )}
+                  {currentProduct.warranty && currentProduct.warranty.trim() ? (
+                    currentProduct.warranty === "No warranty" ? (
+                      <span className="inline-block px-4 py-1.5 bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400 rounded-full text-xs font-medium shadow-sm">
+                        No Warranty
+                      </span>
+                    ) : (
+                      <span className="inline-block px-4 py-1.5 bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300 rounded-full text-xs font-semibold shadow-sm">
+                        Warranty 🛡️ {currentProduct.warranty}
+                      </span>
+                    )
+                  ) : (
+                    <span className="inline-block px-4 py-1.5 bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400 rounded-full text-xs font-medium shadow-sm">
+                      No Warranty
+                    </span>
+                  )}
+                </div>
+
+                {/* Description */}
+                <p className="text-lg text-gray-700 dark:text-gray-300 leading-relaxed mb-8">
+                  {currentProduct.description}
                 </p>
-                <p className="text-gray-500 line-through mt-1">
-                  KSH {currentProduct.price.toLocaleString()}
-                </p>
-              </>
-            ) : (
-              <p className="text-3xl font-bold text-indigo-600">
-                KSH {currentProduct.price.toLocaleString()}
-              </p>
-            )}
+
+                {/* Price */}
+                <div className="mb-8">
+                  {currentProduct.discountPrice ? (
+                    <div>
+                      <p className="text-4xl font-bold text-red-600 dark:text-red-500">
+                        KSH {currentProduct.discountPrice.toLocaleString()}
+                      </p>
+                      <p className="text-xl text-gray-500 dark:text-gray-400 line-through mt-2">
+                        KSH {currentProduct.price.toLocaleString()}
+                      </p>
+                    </div>
+                  ) : (
+                    <p className="text-4xl font-bold text-indigo-600 dark:text-indigo-400">
+                      KSH {currentProduct.price.toLocaleString()}
+                    </p>
+                  )}
+                </div>
+
+                {/* Stock & Seller */}
+                <div className="space-y-4 mb-10">
+                  <p className="text-lg">
+                    <span className="font-semibold text-gray-800 dark:text-gray-200">
+                      Stock:
+                    </span>{" "}
+                    {currentProduct.stockInCount > 0 ? (
+                      <span className="text-green-600 dark:text-green-400 font-bold">
+                        {currentProduct.stockInCount} available
+                      </span>
+                    ) : (
+                      <span className="text-red-600 dark:text-red-400 font-bold">
+                        Out of stock
+                      </span>
+                    )}
+                  </p>
+
+                  <p className="text-lg">
+                    <span className="font-semibold text-gray-800 dark:text-gray-200">
+                      Seller:
+                    </span>{" "}
+                    <span className="text-gray-700 dark:text-gray-300">
+                      {currentProduct.seller.fullName}
+                    </span>
+                  </p>
+                </div>
+
+                {/* Contact Button - Disabled if sold */}
+                {!isOwner && (
+                  <button
+                    onClick={handleWhatsAppClick}
+                    disabled={isSold}
+                    className={`w-full py-4 rounded-xl text-xl font-bold shadow-lg transition-all transform hover:scale-105 ${
+                      isSold
+                        ? "bg-gray-400 cursor-not-allowed text-gray-700"
+                        : user
+                        ? "bg-green-600 hover:bg-green-700 text-white"
+                        : "bg-gray-300 dark:bg-gray-700 text-gray-600 dark:text-gray-400 cursor-not-allowed"
+                    }`}
+                  >
+                    {isSold
+                      ? "Product Sold"
+                      : user
+                      ? "Contact Seller via WhatsApp"
+                      : "Login to Contact Seller"}
+                  </button>
+                )}
+
+                {isOwner && (
+                  <div className="bg-blue-100 dark:bg-blue-900/40 border border-blue-400 dark:border-blue-600 text-blue-800 dark:text-blue-300 p-4 rounded-xl text-center font-semibold">
+                    This is your listing
+                  </div>
+                )}
+
+                 {currentProduct.createdAt && (
+  <p className="text-sm mt-6 text-gray-500 dark:text-gray-400 italic">
+    Posted: {formatDate(currentProduct.createdAt)}
+  </p>
+)}
+              </div>
+            </div>
           </div>
+        </div>
 
-          {/* STOCK */}
-          <p className="mt-3 text-gray-800 text-lg">
-            <span className="font-semibold">Stock:</span>{" "}
-            {currentProduct.stockInCount > 0 ? (
-              <span className="text-green-600 font-semibold">
-                {currentProduct.stockInCount} available
-              </span>
-            ) : (
-              <span className="text-red-600 font-semibold">Out of stock</span>
-            )}
-          </p>
-
-          <p className="mt-1 text-gray-500">
-            <span className="font-semibold">Seller:</span>{" "}
-            {currentProduct.seller.fullName}
-          </p>
-          {!isOwner && (
-            <button
-              onClick={handleWhatsAppClick}
-              className={`mt-6 inline-block px-5 py-3 rounded-lg font-semibold shadow-md transition ${
-                user
-                  ? "bg-green-600 text-white hover:bg-green-700"
-                  : "bg-gray-300 text-gray-600"
-              }`}
-            >
-              {user ? "Contact via WhatsApp" : "Login to Contact Seller"}
-            </button>
-          )}
+        {/* Reviews Section */}
+        <div className="mt-16">
           <ProductReviews
             productId={currentProduct.id}
             userId={user?.id}
