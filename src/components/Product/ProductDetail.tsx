@@ -5,6 +5,7 @@ import { useParams, Link, useNavigate } from "react-router-dom";
 import { fetchProductById } from "../../redux/reducers/productReducer";
 import type { AppDispatch, RootState } from "../../redux/store";
 import ProductReviews from "../Review/ProductReviews";
+import { formatDate } from "../../util/FormDate";
 
 const ProductDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -68,7 +69,6 @@ const ProductDetail: React.FC = () => {
     if (whatsappLink) window.open(whatsappLink, "_blank");
   };
 
-  // Collect all images: main + additional
   const allImages = [
     currentProduct.imageUrl,
     ...(currentProduct.images || []),
@@ -246,11 +246,11 @@ const ProductDetail: React.FC = () => {
                   </div>
                 )}
 
-                  {currentProduct.createdAt && (
-                    <p className="text-sm mt-6 text-gray-300 dark:text-gray-400 italic">
-                      Posted: {new Date(currentProduct.createdAt).toLocaleDateString()}
-                    </p>
-                  )}
+                 {currentProduct.createdAt && (
+  <p className="text-sm mt-6 text-gray-500 dark:text-gray-400 italic">
+    Posted: {formatDate(currentProduct.createdAt)}
+  </p>
+)}
               </div>
             </div>
           </div>

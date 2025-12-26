@@ -62,9 +62,9 @@ const Login = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={isVisible ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.6 }}
-            className="text-5xl font-extrabold text-gray-900 dark:text-white leading-tight mb-6"
+            className="text-4xl font-extrabold text-gray-900 dark:text-white leading-tight mb-6"
           >
-            Welcome to <span className="text-indigo-600 dark:text-indigo-400">MySoko</span>
+            Welcome to <span className="text-indigo-500 dark:text-indigo-400">MySokoChap</span>
           </motion.h1>
 
           <motion.p

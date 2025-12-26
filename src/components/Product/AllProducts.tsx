@@ -310,11 +310,11 @@ const AllProducts: React.FC = () => {
                             />
                           </button>
                         )}
-                          {product.createdAt && (
-                            <p className="mt-4 text-xs text-gray-400 dark:text-gray-400 italic">
-                              Posted: {formatDate(product.createdAt)}
-                            </p>
-                          )}
+                        {product.createdAt && (
+                          <p className="mt-4 text-xs text-gray-400 dark:text-gray-400 italic">
+                            Posted: {formatDate(product.createdAt)}
+                          </p>
+                        )}
 
                         {/* TOP-RIGHT ACTIONS */}
                         <div className="absolute top-3 right-3 z-20 flex flex-col items-end gap-2">
@@ -322,7 +322,8 @@ const AllProducts: React.FC = () => {
                           {product.discountPrice &&
                             product.discountPrice < product.price && (
                               <div className="bg-red-600 text-white text-xs font-bold px-2.5 py-1 rounded-full shadow-md">
-                               -{Math.round(
+                                -
+                                {Math.round(
                                   ((product.price - product.discountPrice) /
                                     product.price) *
                                     100
