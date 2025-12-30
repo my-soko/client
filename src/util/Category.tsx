@@ -103,6 +103,21 @@ export const categories = [
     ],
   },
   {
+    name: "Furniture",
+     brands: [
+      "IKEA",
+      "Ashley Furniture",
+      "La-Z-Boy",
+      "Wayfair",
+      "West Elm",
+      "Urban Ladder",
+      "Godrej Interio",
+      "HomeTown",
+      "Local Makers",
+      "Other",
+    ],
+  },
+  {
     name: "Beauty & Personal Care",
     brands: [
       "Nivea",

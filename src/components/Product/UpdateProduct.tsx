@@ -23,6 +23,8 @@ interface FormData {
   quickSale: boolean;
   productType: "INDIVIDUAL" | "SHOP";
   shopAddress: string;
+  latitude?: number | null;
+  longitude?: number | null;
 }
 
 const MAX_IMAGES = 5;
@@ -51,6 +53,8 @@ const UpdateProduct: React.FC = () => {
     quickSale: false,
     productType: "INDIVIDUAL",
     shopAddress: "",
+    latitude: null,
+    longitude: null,
   });
 
   const [newImages, setNewImages] = useState<File[]>([]);
@@ -60,6 +64,9 @@ const UpdateProduct: React.FC = () => {
   const [removeImages, setRemoveImages] = useState<string[]>([]);
   const [imageError, setImageError] = useState<string>("");
   const [locationError, setLocationError] = useState("");
+  const [locationMode, setLocationMode] = useState<
+    "ADDRESS" | "CURRENT" | null
+  >(null);
 
   // Calculate current total images that will remain after update
   const filteredGallery = existingGallery.filter(
@@ -78,20 +85,20 @@ const UpdateProduct: React.FC = () => {
     ...newPreviews,
   ];
 
+  // Handle selecting address from Google Places
   const handlePlaceSelect = (place: google.maps.places.PlaceResult) => {
     const address = place.formatted_address || "";
     const lat = place.geometry?.location?.lat();
     const lng = place.geometry?.location?.lng();
-
     if (!lat || !lng) return;
 
     setFormData((prev) => ({
       ...prev,
       shopAddress: address,
-      latitude: lat.toString(),
-      longitude: lng.toString(),
+      latitude: lat,
+      longitude: lng,
     }));
-
+    setLocationMode("ADDRESS");
     setLocationError("");
   };
 
@@ -99,6 +106,28 @@ const UpdateProduct: React.FC = () => {
     handlePlaceSelect,
     formData.productType === "SHOP"
   );
+
+  // Handle current geolocation
+  const recordCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      setLocationError("Geolocation not supported.");
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setFormData((prev) => ({
+          ...prev,
+          shopAddress: "",
+          latitude: pos.coords.latitude,
+          longitude: pos.coords.longitude,
+        }));
+        setLocationMode("CURRENT");
+        setLocationError("");
+      },
+      () => setLocationError("Unable to retrieve location."),
+      { enableHighAccuracy: true }
+    );
+  };
 
   useEffect(() => {
     if (formData.productType === "INDIVIDUAL") {
@@ -455,20 +484,37 @@ const UpdateProduct: React.FC = () => {
               Shop Location
             </h3>
 
-            {/* Google Places Autocomplete */}
+            {/* Google Address Input */}
             <input
               ref={addressInputRef}
               type="text"
               placeholder="Search shop address using Google"
               value={formData.shopAddress}
-              onChange={(e) => {
-                handleChange("shopAddress", e.target.value);
-              }}
+              onChange={(e) => handleChange("shopAddress", e.target.value)}
+              disabled={locationMode === "CURRENT"}
               className="w-full border rounded-lg px-4 py-3 disabled:bg-gray-100 dark:disabled:bg-gray-700"
             />
 
+            <div className="text-center text-sm text-gray-500">OR</div>
+
+            {/* Use current location */}
+            <button
+              type="button"
+              onClick={recordCurrentLocation}
+              disabled={locationMode === "ADDRESS"}
+              className="w-full py-3 rounded-lg border border-indigo-600 text-indigo-600 font-semibold hover:bg-indigo-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              📍 Use My Current Location
+            </button>
+
             {locationError && (
               <p className="text-sm text-red-600">{locationError}</p>
+            )}
+
+            {formData.latitude !== null && formData.longitude !== null && (
+              <p className="text-sm text-green-600">
+                📍 Location pinned successfully
+              </p>
             )}
           </div>
         )}

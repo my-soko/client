@@ -8,6 +8,7 @@ import PaymentForm from "../Payment/PaymentForm";
 import { createProduct } from "../../redux/reducers/productReducer";
 import axios from "axios";
 import { usePlacesAutocomplete } from "../../hooks/usePlacesAutocomplete";
+import type { ProductFormData } from "../../util/productType";
 
 const MAX_IMAGES = 5;
 
@@ -23,7 +24,7 @@ const CreateProduct: React.FC = () => {
   const [tempProductData, setTempProductData] = useState<any>(null);
   const [message, setMessage] = useState("");
 
-  const [productData, setProductData] = useState({
+  const [productData, setProductData] = useState<ProductFormData>({
     title: "",
     description: "",
     price: "",
@@ -36,22 +37,41 @@ const CreateProduct: React.FC = () => {
     status: "onsale",
     quickSale: false,
     whatsappNumber: user?.whatsappNumber || "",
-    productType: "INDIVIDUAL" as "INDIVIDUAL" | "SHOP",
+    productType: "INDIVIDUAL",
     shopAddress: "",
+    latitude: null,
+    longitude: null,
   });
 
   const [images, setImages] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
+  type LocationMode = "ADDRESS" | "CURRENT" | null;
+
+  const [locationMode, setLocationMode] = useState<LocationMode>(null);
+
   const [locationError, setLocationError] = useState("");
 
   // Google Places Autocomplete
   const handlePlaceSelect = (place: google.maps.places.PlaceResult) => {
+    if (!place.geometry || !place.geometry.location) {
+      setLocationError("Unable to get location coordinates.");
+      return;
+    }
+
+    const lat = place.geometry.location.lat();
+    const lng = place.geometry.location.lng();
+
+    setLocationMode("ADDRESS");
     setProductData((prev) => ({
       ...prev,
       shopAddress: place.formatted_address || "",
+      latitude: lat,
+      longitude: lng,
     }));
+
     setLocationError("");
   };
+
   const addressInputRef = usePlacesAutocomplete(
     handlePlaceSelect,
     productData.productType === "SHOP"
@@ -63,6 +83,30 @@ const CreateProduct: React.FC = () => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleChange = (key: keyof typeof productData, value: any) => {
     setProductData((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const recordCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      setLocationError("Geolocation is not supported by your browser.");
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setLocationMode("CURRENT");
+        setProductData((prev) => ({
+          ...prev,
+          shopAddress: "",
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+        }));
+        setLocationError("");
+      },
+      () => {
+        setLocationError("Unable to retrieve your location.");
+      },
+      { enableHighAccuracy: true }
+    );
   };
 
   // Images
@@ -123,8 +167,13 @@ const CreateProduct: React.FC = () => {
       return setMessage("Please upload at least one product image.");
     if (!productData.whatsappNumber.trim())
       return setMessage("Please provide your WhatsApp number.");
-    if (productData.productType === "SHOP" && !productData.shopAddress.trim())
-      return setMessage("Shop location is required for shop products.");
+    if (
+      productData.productType === "SHOP" &&
+      (productData.latitude == null || productData.longitude == null)
+    ) {
+      return setMessage("Please pin a valid shop location on the map.");
+    }
+
     if (
       !productData.title.trim() ||
       !productData.description.trim() ||
@@ -156,14 +205,21 @@ const CreateProduct: React.FC = () => {
           : null,
         stockInCount: Number(productData.stockInCount) || 1,
         imageUrls: uploadedUrls,
+
         shopAddress:
           productData.productType === "SHOP" ? productData.shopAddress : null,
+
+        latitude:
+          productData.productType === "SHOP" ? productData.latitude : null,
+
+        longitude:
+          productData.productType === "SHOP" ? productData.longitude : null,
       };
 
       if (isAdmin) return processProductCreation(payload);
       setTempProductData(payload);
       setShowPayment(true);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       console.error(err);
       setMessage(
@@ -347,17 +403,40 @@ const CreateProduct: React.FC = () => {
               <h3 className="font-semibold text-gray-700 dark:text-gray-300">
                 Shop Location
               </h3>
+
+              {/* Google Address */}
               <input
                 ref={addressInputRef}
                 type="text"
                 placeholder="Search shop address using Google"
                 value={productData.shopAddress}
+                disabled={locationMode === "CURRENT"}
                 onChange={(e) => handleChange("shopAddress", e.target.value)}
                 className="w-full border rounded-lg px-4 py-3 disabled:bg-gray-100 dark:disabled:bg-gray-700"
               />
+
+              <div className="text-center text-sm text-gray-500">OR</div>
+
+              {/* Current Location Button */}
+              <button
+                type="button"
+                onClick={recordCurrentLocation}
+                disabled={locationMode === "ADDRESS"}
+                className="w-full py-3 rounded-lg border border-indigo-600 text-indigo-600 font-semibold hover:bg-indigo-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                📍 Use My Current Location
+              </button>
+
               {locationError && (
                 <p className="text-sm text-red-600">{locationError}</p>
               )}
+
+              {productData.latitude !== null &&
+                productData.longitude !== null && (
+                  <p className="text-sm text-green-600">
+                    📍 Location pinned successfully
+                  </p>
+                )}
             </div>
           )}
 

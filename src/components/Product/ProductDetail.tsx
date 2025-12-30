@@ -1,4 +1,3 @@
-// src/components/Product/ProductDetail.tsx
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useParams, Link, useNavigate } from "react-router-dom";
@@ -6,6 +5,20 @@ import { fetchProductById } from "../../redux/reducers/productReducer";
 import type { AppDispatch, RootState } from "../../redux/store";
 import ProductReviews from "../Review/ProductReviews";
 import { formatDate } from "../../util/FormDate";
+import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
+import L from "leaflet";
+import { usePlacesAutocomplete } from "../../hooks/usePlacesAutocomplete";
+import RouteControl from "../Map/RouteControl";
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+delete (L.Icon.Default.prototype as any)._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl:
+    "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png",
+  iconUrl:
+    "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png",
+  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+});
 
 const ProductDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -18,16 +31,110 @@ const ProductDetail: React.FC = () => {
   const { user } = useSelector((state: RootState) => state.auth);
 
   const [mainImage, setMainImage] = useState<string | null>(null);
+  const [userLocation, setUserLocation] = useState<{
+    lat: number;
+    lng: number;
+  } | null>(null);
+  const [distanceKm, setDistanceKm] = useState<number | null>(null);
+  const [customLocation, setCustomLocation] = useState<string>(""); // New input for custom location
+
+  const calculateDistance = (
+    lat1: number,
+    lon1: number,
+    lat2: number,
+    lon2: number
+  ) => {
+    const R = 6371;
+    const dLat = ((lat2 - lat1) * Math.PI) / 180;
+    const dLon = ((lon2 - lon1) * Math.PI) / 180;
+    const a =
+      Math.sin(dLat / 2) ** 2 +
+      Math.cos((lat1 * Math.PI) / 180) *
+        Math.cos((lat2 * Math.PI) / 180) *
+        Math.sin(dLon / 2) ** 2;
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  };
+
+  const inputRef = usePlacesAutocomplete((place) => {
+    if (place.geometry?.location) {
+      const lat = place.geometry.location.lat();
+      const lng = place.geometry.location.lng();
+      setUserLocation({ lat, lng });
+
+      if (currentProduct?.latitude && currentProduct?.longitude) {
+        const d = calculateDistance(
+          lat,
+          lng,
+          currentProduct.latitude,
+          currentProduct.longitude
+        );
+        setDistanceKm(parseFloat(d.toFixed(2)));
+      }
+    }
+  }, true);
+
+  // Geocode custom location
+  const handleCustomLocation = async () => {
+    if (!customLocation.trim()) return;
+
+    try {
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
+          customLocation
+        )}`
+      );
+      const data = await res.json();
+      if (data && data[0]) {
+        const { lat, lon } = data[0];
+        const latNum = parseFloat(lat);
+        const lonNum = parseFloat(lon);
+        setUserLocation({ lat: latNum, lng: lonNum });
+        if (currentProduct?.latitude && currentProduct?.longitude) {
+          const d = calculateDistance(
+            latNum,
+            lonNum,
+            currentProduct.latitude,
+            currentProduct.longitude
+          );
+          setDistanceKm(parseFloat(d.toFixed(2)));
+        }
+      } else {
+        alert("Location not found, please try again.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Failed to fetch location, try again.");
+    }
+  };
+
+  const handleUseMyLocation = () => {
+    if (!navigator.geolocation) {
+      alert("Geolocation is not supported by your browser");
+      return;
+    }
+    navigator.geolocation.getCurrentPosition((position) => {
+      const { latitude, longitude } = position.coords;
+      setUserLocation({ lat: latitude, lng: longitude });
+      if (currentProduct?.latitude && currentProduct?.longitude) {
+        const d = calculateDistance(
+          latitude,
+          longitude,
+          currentProduct.latitude,
+          currentProduct.longitude
+        );
+        setDistanceKm(parseFloat(d.toFixed(2)));
+      }
+    });
+  };
 
   useEffect(() => {
     if (id) dispatch(fetchProductById(id));
   }, [dispatch, id]);
 
   useEffect(() => {
-    if (currentProduct?.imageUrl) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setMainImage(currentProduct.imageUrl);
-    }
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (currentProduct?.imageUrl) setMainImage(currentProduct.imageUrl);
   }, [currentProduct]);
 
   if (loading)
@@ -56,7 +163,9 @@ const ProductDetail: React.FC = () => {
 
   const whatsappLink =
     user && !isOwner && currentProduct.seller?.whatsappNumber && !isSold
-      ? `https://wa.me/${currentProduct.seller.whatsappNumber}?text=${encodeURIComponent(
+      ? `https://wa.me/${
+          currentProduct.seller.whatsappNumber
+        }?text=${encodeURIComponent(
           `Hello ${currentProduct.seller.fullName}, my name is ${user.fullName}. I saw your product "${currentProduct.title}" on MySoko and I'm very interested! Is it still available?`
         )}`
       : null;
@@ -74,6 +183,9 @@ const ProductDetail: React.FC = () => {
     ...(currentProduct.images || []),
   ].filter(Boolean) as string[];
 
+  const hasLocation =
+    currentProduct.latitude != null && currentProduct.longitude != null;
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-slate-900 py-8 px-4">
       <div className="max-w-6xl mx-auto">
@@ -84,13 +196,9 @@ const ProductDetail: React.FC = () => {
         >
           <span className="text-2xl">←</span> Back to All Products
         </Link>
-
-        {/* Main Product Card */}
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl overflow-hidden border border-gray-200 dark:border-gray-700">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 p-8 lg:p-12">
-            {/* Images Section */}
             <div className="space-y-6">
-              {/* Main Image */}
               <div className="relative w-full h-[500px] bg-gray-100 dark:bg-gray-700 rounded-2xl overflow-hidden shadow-lg">
                 <img
                   src={mainImage || currentProduct.imageUrl}
@@ -103,8 +211,6 @@ const ProductDetail: React.FC = () => {
                   </div>
                 )}
               </div>
-
-              {/* Thumbnails */}
               {allImages.length > 1 && (
                 <div className="grid grid-cols-4 sm:grid-cols-5 gap-4">
                   {allImages.map((img, index) => (
@@ -127,7 +233,6 @@ const ProductDetail: React.FC = () => {
                 </div>
               )}
             </div>
-
             <div className="flex flex-col justify-between">
               <div>
                 <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">
@@ -168,13 +273,9 @@ const ProductDetail: React.FC = () => {
                     </span>
                   )}
                 </div>
-
-                {/* Description */}
                 <p className="text-lg text-gray-700 dark:text-gray-300 leading-relaxed mb-8">
                   {currentProduct.description}
                 </p>
-
-                {/* Price */}
                 <div className="mb-8">
                   {currentProduct.discountPrice ? (
                     <div>
@@ -191,35 +292,105 @@ const ProductDetail: React.FC = () => {
                     </p>
                   )}
                 </div>
+                <div className="gap-8 pb-6">
+                  {hasLocation && (
+                    <div className="mb-8 h-80 w-full rounded-xl overflow-hidden shadow-lg">
+                      <div className="mb-5">
+                        <span className="text-gray-300 font-semibold text-xl">
+                          Shop's Physical Location
+                        </span>
+                      </div>
+                      <MapContainer
+                        center={[
+                          currentProduct.latitude!,
+                          currentProduct.longitude!,
+                        ]}
+                        zoom={16}
+                        scrollWheelZoom={true}
+                        className="h-full w-full"
+                      >
+                        <TileLayer
+                          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                          attribution="&copy; OpenStreetMap contributors"
+                        />
 
-                {/* Stock & Seller */}
-                <div className="space-y-4 mb-10">
-                  <p className="text-lg">
-                    <span className="font-semibold text-gray-800 dark:text-gray-200">
-                      Stock:
-                    </span>{" "}
-                    {currentProduct.stockInCount > 0 ? (
-                      <span className="text-green-600 dark:text-green-400 font-bold">
-                        {currentProduct.stockInCount} available
-                      </span>
-                    ) : (
-                      <span className="text-red-600 dark:text-red-400 font-bold">
-                        Out of stock
-                      </span>
-                    )}
-                  </p>
+                        {/* Shop marker */}
+                        <Marker
+                          position={[
+                            currentProduct.latitude!,
+                            currentProduct.longitude!,
+                          ]}
+                        >
+                          <Popup>{currentProduct.title}</Popup>
+                        </Marker>
 
-                  <p className="text-lg">
-                    <span className="font-semibold text-gray-800 dark:text-gray-200">
-                      Seller:
-                    </span>{" "}
-                    <span className="text-gray-700 dark:text-gray-300">
-                      {currentProduct.seller.fullName}
-                    </span>
-                  </p>
+                        {/* User marker */}
+                        {userLocation && (
+                          <Marker
+                            position={[userLocation.lat, userLocation.lng]}
+                          >
+                            <Popup>Your location</Popup>
+                          </Marker>
+                        )}
+
+                        {/* Route line */}
+                        {userLocation && (
+                          <RouteControl
+                            from={userLocation}
+                            to={{
+                              lat: currentProduct.latitude!,
+                              lng: currentProduct.longitude!,
+                            }}
+                          />
+                        )}
+                      </MapContainer>
+                    </div>
+                  )}
                 </div>
 
-                {/* Contact Button - Disabled if sold */}
+                {hasLocation && (
+                  <div className="mb-6">
+                    <h2 className="text-lg font-semibold mb-2">
+                      Get Distance & Directions
+                    </h2>
+
+                    {/* Use Current Location */}
+                    <button
+                      onClick={handleUseMyLocation}
+                      className="bg-indigo-600 text-white px-4 py-2 rounded-lg mr-2 hover:bg-indigo-700 transition"
+                    >
+                      Use My Current Location
+                    </button>
+
+                    {/* Or Enter Custom Location */}
+                    <div className="mt-4 flex gap-2">
+                      <input
+                        type="text"
+                        ref={inputRef}
+                        value={customLocation}
+                        onChange={(e) => setCustomLocation(e.target.value)}
+                        placeholder="Enter a starting location"
+                        className="flex-1 px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-200 bg-white dark:bg-gray-800"
+                      />
+                      <button
+                        onClick={handleCustomLocation}
+                        className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition"
+                      >
+                        Go
+                      </button>
+                    </div>
+
+                    {/* Distance Display */}
+                    {distanceKm !== null && (
+                      <p className="mt-2 text-gray-700 dark:text-gray-300">
+                        Distance from your location:{" "}
+                        <strong>{distanceKm} km</strong>
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {/* Contact / Owner */}
                 {!isOwner && (
                   <button
                     onClick={handleWhatsAppClick}
@@ -246,11 +417,11 @@ const ProductDetail: React.FC = () => {
                   </div>
                 )}
 
-                 {currentProduct.createdAt && (
-  <p className="text-sm mt-6 text-gray-500 dark:text-gray-400 italic">
-    Posted: {formatDate(currentProduct.createdAt)}
-  </p>
-)}
+                {currentProduct.createdAt && (
+                  <p className="text-sm mt-6 text-gray-500 dark:text-gray-400 italic">
+                    Posted: {formatDate(currentProduct.createdAt)}
+                  </p>
+                )}
               </div>
             </div>
           </div>
