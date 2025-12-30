@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
+import type { ProductType } from "../../util/productType";
 
 const API_URL = "http://localhost:5000/api/product";
 
@@ -27,6 +28,8 @@ export interface Product {
   sellerId: string;
   stockTotal: number;
   seller: Seller;
+  productType: ProductType;
+  shopAddress?: string | null;
   averageRating?: number;
   totalReviews?: number;
   whatsappLink?: string;

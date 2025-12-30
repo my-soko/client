@@ -1,0 +1,25 @@
+1. we need to include product type as individual or shop product
+2. If shop product, we should include the shop location, clickable to display on google map
+3. We should have options to autoselect location or use live location to record the exact location of the shop/business
+
+NEXT RECOMMENDED BACKEND ENHANCEMENTS
+
+Auto-generate Google Maps link in response
+
+Add geospatial index later for nearby shops
+
+Add location-based product filtering
+
+When ready, say:
+
+
+🔜 NEXT (recommended)
+
+Auto-detect GPS (navigator.geolocation)
+
+Google Maps picker modal
+
+Filter products by distance
+
+Say:
+👉 “Next: add GPS auto-detect & map picker”

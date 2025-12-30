@@ -8,6 +8,7 @@ import {
 import type { AppDispatch, RootState } from "../../redux/store";
 import { categories } from "../../util/Category";
 import { warrantyOptions } from "../../util/Warranty";
+import { usePlacesAutocomplete } from "../../hooks/usePlacesAutocomplete";
 
 interface FormData {
   title: string;
@@ -20,6 +21,8 @@ interface FormData {
   condition: string;
   status: "onsale" | "sold";
   quickSale: boolean;
+  productType: "INDIVIDUAL" | "SHOP";
+  shopAddress: string;
 }
 
 const MAX_IMAGES = 5;
@@ -46,6 +49,8 @@ const UpdateProduct: React.FC = () => {
     condition: "BRAND_NEW",
     status: "onsale",
     quickSale: false,
+    productType: "INDIVIDUAL",
+    shopAddress: "",
   });
 
   const [newImages, setNewImages] = useState<File[]>([]);
@@ -54,6 +59,7 @@ const UpdateProduct: React.FC = () => {
   const [existingGallery, setExistingGallery] = useState<string[]>([]);
   const [removeImages, setRemoveImages] = useState<string[]>([]);
   const [imageError, setImageError] = useState<string>("");
+  const [locationError, setLocationError] = useState("");
 
   // Calculate current total images that will remain after update
   const filteredGallery = existingGallery.filter(
@@ -72,7 +78,39 @@ const UpdateProduct: React.FC = () => {
     ...newPreviews,
   ];
 
-  // Fetch product
+  const handlePlaceSelect = (place: google.maps.places.PlaceResult) => {
+    const address = place.formatted_address || "";
+    const lat = place.geometry?.location?.lat();
+    const lng = place.geometry?.location?.lng();
+
+    if (!lat || !lng) return;
+
+    setFormData((prev) => ({
+      ...prev,
+      shopAddress: address,
+      latitude: lat.toString(),
+      longitude: lng.toString(),
+    }));
+
+    setLocationError("");
+  };
+
+  const addressInputRef = usePlacesAutocomplete(
+    handlePlaceSelect,
+    formData.productType === "SHOP"
+  );
+
+  useEffect(() => {
+    if (formData.productType === "INDIVIDUAL") {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setFormData((prev) => ({
+        ...prev,
+        shopAddress: "",
+      }));
+      setLocationError("");
+    }
+  }, [formData.productType]);
+
   useEffect(() => {
     if (id && !product) dispatch(fetchProductById(id));
   }, [dispatch, id, product]);
@@ -96,6 +134,8 @@ const UpdateProduct: React.FC = () => {
           ? product.status
           : "onsale",
       quickSale: product.quickSale || false,
+      productType: product.productType || "INDIVIDUAL",
+      shopAddress: product.shopAddress || "",
     });
 
     setExistingCover(product.imageUrl || "");
@@ -143,9 +183,7 @@ const UpdateProduct: React.FC = () => {
     if (!id) return;
 
     if (totalImagesAfterUpdate > MAX_IMAGES) {
-      setImageError(
-        `Total images cannot exceed ${MAX_IMAGES}. Please remove some images.`
-      );
+      setLocationError("Shop location is required for shop products.");
       return;
     }
 
@@ -163,6 +201,12 @@ const UpdateProduct: React.FC = () => {
       submitData.append("removeImages", JSON.stringify(removeImages));
 
     newImages.forEach((file) => submitData.append("images", file));
+    if (formData.productType === "SHOP" && !formData.shopAddress.trim()) {
+      setLocationError(
+        "Please provide either a shop address or pin the shop location."
+      );
+      return;
+    }
 
     const result = await dispatch(updateProduct({ id, formData: submitData }));
     if (updateProduct.fulfilled.match(result)) navigate("/");
@@ -375,6 +419,59 @@ const UpdateProduct: React.FC = () => {
             </select>
           </div>
         </div>
+
+        {/* Product Type */}
+        <div className="space-y-2">
+          <label className="block font-medium">Product Type</label>
+
+          <select
+            value={formData.productType}
+            onChange={(e) =>
+              handleChange(
+                "productType",
+                e.target.value as "INDIVIDUAL" | "SHOP"
+              )
+            }
+            className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-3 focus:ring-2 focus:ring-indigo-500"
+          >
+            <option className="dark:bg-slate-900" value="INDIVIDUAL">
+              Individual Seller
+            </option>
+            <option className="dark:bg-slate-900" value="SHOP">
+              Shop / Business
+            </option>
+          </select>
+
+          <p className="text-xs text-gray-500">
+            {formData.productType === "SHOP"
+              ? "Shop products must have a physical location"
+              : "Individual sellers do not require a location"}
+          </p>
+        </div>
+
+        {formData.productType === "SHOP" && (
+          <div className="space-y-4 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+            <h3 className="font-semibold text-gray-700 dark:text-gray-300">
+              Shop Location
+            </h3>
+
+            {/* Google Places Autocomplete */}
+            <input
+              ref={addressInputRef}
+              type="text"
+              placeholder="Search shop address using Google"
+              value={formData.shopAddress}
+              onChange={(e) => {
+                handleChange("shopAddress", e.target.value);
+              }}
+              className="w-full border rounded-lg px-4 py-3 disabled:bg-gray-100 dark:disabled:bg-gray-700"
+            />
+
+            {locationError && (
+              <p className="text-sm text-red-600">{locationError}</p>
+            )}
+          </div>
+        )}
 
         {/* Condition & Warranty */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
