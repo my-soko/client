@@ -5,6 +5,7 @@ import type { ProductType } from "../../util/productType";
 const API_URL = "http://localhost:5000/api/product";
 
 export interface Seller {
+  address: string;
   fullName: string;
   email: string;
   whatsappNumber?: string;
@@ -21,6 +22,7 @@ export interface Product {
   quickSale: boolean;
   category: string;
   brand: string;
+  subItem?: string | null;
   warranty: string | null;
   condition: "BRAND_NEW" | "SLIGHTLY_USED" | "REFURBISHED";
   imageUrl: string;
@@ -29,6 +31,7 @@ export interface Product {
   stockTotal: number;
   seller: Seller;
   productType: ProductType;
+   shopName: string;
  shopAddress: string;
   latitude: number | null;
   longitude: number | null;

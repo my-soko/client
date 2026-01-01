@@ -17,11 +17,13 @@ interface FormData {
   stockInCount: string;
   category: string;
   brand: string;
+  subItem: string;
   warranty: string;
   condition: string;
   status: "onsale" | "sold";
   quickSale: boolean;
   productType: "INDIVIDUAL" | "SHOP";
+  shopName: string;
   shopAddress: string;
   latitude?: number | null;
   longitude?: number | null;
@@ -47,11 +49,13 @@ const UpdateProduct: React.FC = () => {
     stockInCount: "",
     category: "",
     brand: "",
+    subItem: "",
     warranty: "",
     condition: "BRAND_NEW",
     status: "onsale",
     quickSale: false,
     productType: "INDIVIDUAL",
+    shopName: "",
     shopAddress: "",
     latitude: null,
     longitude: null,
@@ -84,6 +88,12 @@ const UpdateProduct: React.FC = () => {
     ...filteredGallery,
     ...newPreviews,
   ];
+
+  const selectedCategory = categories.find(
+    (cat) => cat.name === formData.category
+  );
+
+  const subItems = selectedCategory?.subItems || [];
 
   // Handle selecting address from Google Places
   const handlePlaceSelect = (place: google.maps.places.PlaceResult) => {
@@ -156,6 +166,7 @@ const UpdateProduct: React.FC = () => {
       stockInCount: product.stockInCount.toString(),
       category: product.category || "",
       brand: product.brand || "",
+      subItem: product.subItem || "",
       warranty: product.warranty || "",
       condition: product.condition || "BRAND_NEW",
       status:
@@ -165,6 +176,7 @@ const UpdateProduct: React.FC = () => {
       quickSale: product.quickSale || false,
       productType: product.productType || "INDIVIDUAL",
       shopAddress: product.shopAddress || "",
+      shopName: product.shopName || "",
     });
 
     setExistingCover(product.imageUrl || "");
@@ -211,15 +223,15 @@ const UpdateProduct: React.FC = () => {
     e.preventDefault();
     if (!id) return;
 
-    if (totalImagesAfterUpdate > MAX_IMAGES) {
-      setLocationError("Shop location is required for shop products.");
-      return;
-    }
+   if (totalImagesAfterUpdate > MAX_IMAGES) {
+  setImageError(`Maximum of ${MAX_IMAGES} images allowed.`);
+  return;
+}
 
-    if (totalImagesAfterUpdate === 0) {
-      setImageError("Product must have at least one image.");
-      return;
-    }
+if (totalImagesAfterUpdate === 0) {
+  setImageError("Product must have at least one image.");
+  return;
+}
 
     const submitData = new FormData();
     Object.entries(formData).forEach(([key, value]) => {
@@ -230,7 +242,11 @@ const UpdateProduct: React.FC = () => {
       submitData.append("removeImages", JSON.stringify(removeImages));
 
     newImages.forEach((file) => submitData.append("images", file));
-    if (formData.productType === "SHOP" && !formData.shopAddress.trim()) {
+    if (
+      formData.productType === "SHOP" &&
+      !formData.shopAddress.trim() &&
+      !formData.shopName
+    ) {
       setLocationError(
         "Please provide either a shop address or pin the shop location."
       );
@@ -407,7 +423,10 @@ const UpdateProduct: React.FC = () => {
             <label className="block font-medium mb-2">Category</label>
             <select
               value={formData.category}
-              onChange={(e) => handleChange("category", e.target.value)}
+              onChange={(e) => {
+                handleChange("category", e.target.value);
+                handleChange("subItem", "");
+              }}
               required
               className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-3 focus:ring-2 focus:ring-indigo-500"
             >
@@ -446,6 +465,30 @@ const UpdateProduct: React.FC = () => {
                     </option>
                   ))}
             </select>
+            {subItems.length > 0 && (
+              <div>
+                <label className="block font-medium mb-2">Sub Category</label>
+                <select
+                  value={formData.subItem}
+                  onChange={(e) => handleChange("subItem", e.target.value)}
+                  required
+                  className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-3 focus:ring-2 focus:ring-indigo-500"
+                >
+                  <option className="dark:bg-slate-900" value="">
+                    Select Sub Category
+                  </option>
+                  {subItems.map((item) => (
+                    <option
+                      className="dark:bg-slate-900"
+                      key={item}
+                      value={item}
+                    >
+                      {item}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
           </div>
         </div>
 
@@ -483,6 +526,15 @@ const UpdateProduct: React.FC = () => {
             <h3 className="font-semibold text-gray-700 dark:text-gray-300">
               Shop Location
             </h3>
+
+            <input
+              type="text"
+              placeholder="Shop Name"
+              value={formData.shopName}
+              onChange={(e) => handleChange("shopName", e.target.value)}
+              required
+              className="w-full border rounded-lg px-4 py-3 focus:ring-2 focus:ring-indigo-500"
+            />
 
             {/* Google Address Input */}
             <input

@@ -74,40 +74,6 @@ const ProductDetail: React.FC = () => {
     }
   }, true);
 
-  // Geocode custom location
-  const handleCustomLocation = async () => {
-    if (!customLocation.trim()) return;
-
-    try {
-      const res = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
-          customLocation
-        )}`
-      );
-      const data = await res.json();
-      if (data && data[0]) {
-        const { lat, lon } = data[0];
-        const latNum = parseFloat(lat);
-        const lonNum = parseFloat(lon);
-        setUserLocation({ lat: latNum, lng: lonNum });
-        if (currentProduct?.latitude && currentProduct?.longitude) {
-          const d = calculateDistance(
-            latNum,
-            lonNum,
-            currentProduct.latitude,
-            currentProduct.longitude
-          );
-          setDistanceKm(parseFloat(d.toFixed(2)));
-        }
-      } else {
-        alert("Location not found, please try again.");
-      }
-    } catch (err) {
-      console.error(err);
-      alert("Failed to fetch location, try again.");
-    }
-  };
-
   const handleUseMyLocation = () => {
     if (!navigator.geolocation) {
       alert("Geolocation is not supported by your browser");
@@ -372,12 +338,6 @@ const ProductDetail: React.FC = () => {
                         placeholder="Enter a starting location"
                         className="flex-1 px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-200 bg-white dark:bg-gray-800"
                       />
-                      <button
-                        onClick={handleCustomLocation}
-                        className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition"
-                      >
-                        Go
-                      </button>
                     </div>
 
                     {/* Distance Display */}

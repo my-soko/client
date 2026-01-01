@@ -32,12 +32,14 @@ const CreateProduct: React.FC = () => {
     stockInCount: "",
     category: "",
     brand: "",
+    subItem: "",
     warranty: "",
     condition: "",
     status: "onsale",
     quickSale: false,
     whatsappNumber: user?.whatsappNumber || "",
     productType: "INDIVIDUAL",
+    shopName: "",
     shopAddress: "",
     latitude: null,
     longitude: null,
@@ -46,7 +48,6 @@ const CreateProduct: React.FC = () => {
   const [images, setImages] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
   type LocationMode = "ADDRESS" | "CURRENT" | null;
-
   const [locationMode, setLocationMode] = useState<LocationMode>(null);
 
   const [locationError, setLocationError] = useState("");
@@ -77,8 +78,12 @@ const CreateProduct: React.FC = () => {
     productData.productType === "SHOP"
   );
 
-  const selectedCategoryBrands =
-    categories.find((cat) => cat.name === productData.category)?.brands || [];
+ const selectedCategory = categories.find(
+  (cat) => cat.name === productData.category
+);
+
+const selectedCategoryBrands = selectedCategory?.brands || [];
+const subItems = selectedCategory?.subItems || [];
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleChange = (key: keyof typeof productData, value: any) => {
@@ -167,11 +172,11 @@ const CreateProduct: React.FC = () => {
       return setMessage("Please upload at least one product image.");
     if (!productData.whatsappNumber.trim())
       return setMessage("Please provide your WhatsApp number.");
-    if (
-      productData.productType === "SHOP" &&
-      (productData.latitude == null || productData.longitude == null)
-    ) {
-      return setMessage("Please pin a valid shop location on the map.");
+    if (productData.productType === "SHOP") {
+      if (!productData.shopName.trim())
+        return setMessage("Please provide your shop name.");
+      if (productData.latitude == null || productData.longitude == null)
+        return setMessage("Please pin a valid shop location on the map.");
     }
 
     if (
@@ -205,7 +210,8 @@ const CreateProduct: React.FC = () => {
           : null,
         stockInCount: Number(productData.stockInCount) || 1,
         imageUrls: uploadedUrls,
-
+        shopName:
+          productData.productType === "SHOP" ? productData.shopName : "",
         shopAddress:
           productData.productType === "SHOP" ? productData.shopAddress : null,
 
@@ -380,6 +386,21 @@ const CreateProduct: React.FC = () => {
             ))}
           </select>
 
+          {subItems.length > 0 && (
+  <select
+    value={productData.subItem || ""}
+    onChange={(e) => handleChange("subItem", e.target.value)}
+    required
+    disabled={!productData.brand || formLocked}
+    className="w-full px-5 py-4 border rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none disabled:opacity-60"
+  >
+    <option value="">Select Specific Item</option>
+    {subItems.map((item) => (
+      <option key={item} value={item}>{item}</option>
+    ))}
+  </select>
+)}
+
           {/* Product Type & Shop Address */}
           <div className="space-y-2">
             <label className="block font-medium">Product Type</label>
@@ -401,8 +422,19 @@ const CreateProduct: React.FC = () => {
           {productData.productType === "SHOP" && (
             <div className="space-y-4 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
               <h3 className="font-semibold text-gray-700 dark:text-gray-300">
-                Shop Location
+                Shop Details
               </h3>
+
+              {/* Shop Name */}
+              <input
+                type="text"
+                placeholder="Shop Name"
+                value={productData.shopName}
+                onChange={(e) => handleChange("shopName", e.target.value)}
+                required
+                disabled={formLocked}
+                className="w-full border rounded-lg px-4 py-3 focus:ring-2 focus:ring-indigo-500 outline-none"
+              />
 
               {/* Google Address */}
               <input

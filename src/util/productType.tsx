@@ -8,12 +8,14 @@ export type ProductFormData = {
   stockInCount: string;
   category: string;
   brand: string;
+  subItem?: string | null;
   warranty: string;
   condition: string;
   status: string;
   quickSale: boolean;
   whatsappNumber: string;
   productType: "INDIVIDUAL" | "SHOP";
+  shopName: string;
   shopAddress: string;
   latitude: number | null;
   longitude: number | null;
