@@ -3,10 +3,12 @@ import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import type { AppDispatch, RootState } from "../../redux/store";
 import { categories } from "../../util/Category";
+import { warrantyOptions } from "../../util/Warranty";
 import PaymentForm from "../Payment/PaymentForm";
 import { createProduct } from "../../redux/reducers/productReducer";
-import { warrantyOptions } from "../../util/Warranty";
 import axios from "axios";
+import { usePlacesAutocomplete } from "../../hooks/usePlacesAutocomplete";
+import type { ProductFormData } from "../../util/productType";
 
 const MAX_IMAGES = 5;
 
@@ -16,65 +18,125 @@ const CreateProduct: React.FC = () => {
   const { user } = useSelector((state: RootState) => state.auth);
   const isAdmin = user?.role === "admin";
 
-  const [showPayment, setShowPayment] = useState(false);
   const [formLocked, setFormLocked] = useState(false);
+  const [showPayment, setShowPayment] = useState(false);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [tempProductData, setTempProductData] = useState<any>(null);
   const [message, setMessage] = useState("");
 
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [price, setPrice] = useState("");
-  const [discountPrice, setDiscountPrice] = useState("");
-  const [stockInCount, setStockInCount] = useState("");
-  const [category, setCategory] = useState("");
-  const [brand, setBrand] = useState("");
-  const [warranty, setWarranty] = useState("");
-  const [condition, setCondition] = useState("");
-  const [status, setStatus] = useState("onsale");
-  const [quickSale, setQuickSale] = useState(false);
-  const [whatsappNumber, setWhatsappNumber] = useState(
-    user?.whatsappNumber || ""
-  );
+  const [productData, setProductData] = useState<ProductFormData>({
+    title: "",
+    description: "",
+    price: "",
+    discountPrice: "",
+    stockInCount: "",
+    category: "",
+    brand: "",
+    subItem: "",
+    warranty: "",
+    condition: "",
+    status: "onsale",
+    quickSale: false,
+    whatsappNumber: user?.whatsappNumber || "",
+    productType: "INDIVIDUAL",
+    shopName: "",
+    shopAddress: "",
+    latitude: null,
+    longitude: null,
+  });
 
-  // Image states
   const [images, setImages] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
+  type LocationMode = "ADDRESS" | "CURRENT" | null;
+  const [locationMode, setLocationMode] = useState<LocationMode>(null);
 
-  // Dynamic brands
-  const selectedCategoryBrands =
-    categories.find((cat) => cat.name === category)?.brands || [];
+  const [locationError, setLocationError] = useState("");
 
-  // Add new images
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files) return;
-
-    const newFiles = Array.from(e.target.files);
-    const availableSlots = MAX_IMAGES - images.length;
-
-    if (newFiles.length > availableSlots) {
-      setMessage(
-        `You can only add ${availableSlots} more image(s). Maximum ${MAX_IMAGES} images allowed.`
-      );
-      const allowedFiles = newFiles.slice(0, availableSlots);
-      addImages(allowedFiles);
-    } else {
-      setMessage("");
-      addImages(newFiles);
+  // Google Places Autocomplete
+  const handlePlaceSelect = (place: google.maps.places.PlaceResult) => {
+    if (!place.geometry || !place.geometry.location) {
+      setLocationError("Unable to get location coordinates.");
+      return;
     }
+
+    const lat = place.geometry.location.lat();
+    const lng = place.geometry.location.lng();
+
+    setLocationMode("ADDRESS");
+    setProductData((prev) => ({
+      ...prev,
+      shopAddress: place.formatted_address || "",
+      latitude: lat,
+      longitude: lng,
+    }));
+
+    setLocationError("");
   };
 
+  const addressInputRef = usePlacesAutocomplete(
+    handlePlaceSelect,
+    productData.productType === "SHOP"
+  );
+
+ const selectedCategory = categories.find(
+  (cat) => cat.name === productData.category
+);
+
+const selectedCategoryBrands = selectedCategory?.brands || [];
+const subItems = selectedCategory?.subItems || [];
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const handleChange = (key: keyof typeof productData, value: any) => {
+    setProductData((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const recordCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      setLocationError("Geolocation is not supported by your browser.");
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setLocationMode("CURRENT");
+        setProductData((prev) => ({
+          ...prev,
+          shopAddress: "",
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+        }));
+        setLocationError("");
+      },
+      () => {
+        setLocationError("Unable to retrieve your location.");
+      },
+      { enableHighAccuracy: true }
+    );
+  };
+
+  // Images
   const addImages = (files: File[]) => {
     const newPreviews = files.map((file) => URL.createObjectURL(file));
     setImages((prev) => [...prev, ...files]);
     setPreviews((prev) => [...prev, ...newPreviews]);
   };
 
-  // Remove image by index
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files) return;
+    const newFiles = Array.from(e.target.files);
+    const availableSlots = MAX_IMAGES - images.length;
+    if (newFiles.length > availableSlots) {
+      setMessage(
+        `You can only add ${availableSlots} more image(s). Maximum ${MAX_IMAGES} images allowed.`
+      );
+      addImages(newFiles.slice(0, availableSlots));
+    } else addImages(newFiles);
+  };
+
   const removeImage = (index: number) => {
     setImages((prev) => prev.filter((_, i) => i !== index));
     setPreviews((prev) => {
-      URL.revokeObjectURL(prev[index]); // Clean up memory
+      URL.revokeObjectURL(prev[index]);
       return prev.filter((_, i) => i !== index);
     });
     setMessage("");
@@ -84,11 +146,10 @@ const CreateProduct: React.FC = () => {
   const processProductCreation = async (payload: any) => {
     const formData = new FormData();
     Object.entries(payload).forEach(([key, value]) => {
-      if (Array.isArray(value)) {
-        value.forEach((url: string) => formData.append("imageUrls", url));
-      } else if (value !== null && value !== undefined) {
+      if (Array.isArray(value))
+        value.forEach((url) => formData.append("imageUrls", url));
+      else if (value !== null && value !== undefined)
         formData.append(key, String(value));
-      }
     });
 
     const result = await dispatch(createProduct(formData));
@@ -106,79 +167,63 @@ const CreateProduct: React.FC = () => {
     setMessage("");
     setFormLocked(true);
 
-    if (images.length === 0) {
-      setMessage("Please upload at least one product image.");
-      setFormLocked(false);
-      return;
-    }
-
-    if (images.length > MAX_IMAGES) {
-      setMessage(`Maximum ${MAX_IMAGES} images allowed.`);
-      setFormLocked(false);
-      return;
-    }
-
-    if (!whatsappNumber.trim()) {
-      setMessage("Please provide your WhatsApp number.");
-      setFormLocked(false);
-      return;
+    // Validation
+    if (!images.length)
+      return setMessage("Please upload at least one product image.");
+    if (!productData.whatsappNumber.trim())
+      return setMessage("Please provide your WhatsApp number.");
+    if (productData.productType === "SHOP") {
+      if (!productData.shopName.trim())
+        return setMessage("Please provide your shop name.");
+      if (productData.latitude == null || productData.longitude == null)
+        return setMessage("Please pin a valid shop location on the map.");
     }
 
     if (
-      !title.trim() ||
-      !description.trim() ||
-      !price ||
-      !category ||
-      !brand ||
-      !condition
-    ) {
-      setMessage("Please fill in all required fields.");
-      setFormLocked(false);
-      return;
-    }
+      !productData.title.trim() ||
+      !productData.description.trim() ||
+      !productData.price ||
+      !productData.category ||
+      !productData.brand ||
+      !productData.condition
+    )
+      return setMessage("Please fill in all required fields.");
 
     try {
       setMessage("Uploading images...");
       const uploadForm = new FormData();
       images.forEach((img) => uploadForm.append("images", img));
-
       const uploadRes = await axios.post(
         "http://localhost:5000/api/upload/temp",
         uploadForm,
-        {
-          headers: { "Content-Type": "multipart/form-data" },
-          timeout: 60000,
-        }
+        { headers: { "Content-Type": "multipart/form-data" }, timeout: 60000 }
       );
 
       const uploadedUrls: string[] = uploadRes.data.urls;
-      if (!uploadedUrls || uploadedUrls.length === 0) {
-        throw new Error("No image URLs returned from server");
-      }
+      if (!uploadedUrls?.length) throw new Error("No image URLs returned.");
 
-      const productPayload = {
-        title: title.trim(),
-        description: description.trim(),
-        price: Number(price),
-        discountPrice: discountPrice ? Number(discountPrice) : null,
-        stockInCount: Number(stockInCount) || 1,
-        category,
-        brand,
-        warranty: warranty || null,
-        condition,
-        whatsappNumber: whatsappNumber.trim(),
+      const payload = {
+        ...productData,
+        price: Number(productData.price),
+        discountPrice: productData.discountPrice
+          ? Number(productData.discountPrice)
+          : null,
+        stockInCount: Number(productData.stockInCount) || 1,
         imageUrls: uploadedUrls,
-        status,
-        quickSale,
+        shopName:
+          productData.productType === "SHOP" ? productData.shopName : "",
+        shopAddress:
+          productData.productType === "SHOP" ? productData.shopAddress : null,
+
+        latitude:
+          productData.productType === "SHOP" ? productData.latitude : null,
+
+        longitude:
+          productData.productType === "SHOP" ? productData.longitude : null,
       };
 
-      if (isAdmin) {
-        setMessage("Creating product (Admin bypass)...");
-        await processProductCreation(productPayload);
-        return;
-      }
-
-      setTempProductData(productPayload);
+      if (isAdmin) return processProductCreation(payload);
+      setTempProductData(payload);
       setShowPayment(true);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
@@ -186,7 +231,7 @@ const CreateProduct: React.FC = () => {
       setMessage(
         err.response?.data?.message ||
           err.message ||
-          "Upload failed. Please try again."
+          "Upload failed. Try again."
       );
       setFormLocked(false);
     }
@@ -217,9 +262,7 @@ const CreateProduct: React.FC = () => {
               onSuccess={() => {
                 setShowPayment(false);
                 setFormLocked(false);
-                setMessage(
-                  "Payment successful! Your product has been posted automatically."
-                );
+                setMessage("Payment successful! Product posted.");
                 setTimeout(() => navigate("/"), 3000);
               }}
             />
@@ -237,7 +280,7 @@ const CreateProduct: React.FC = () => {
         </button>
       </div>
 
-      {/* Main Form */}
+      {/* Form */}
       <div className="max-w-2xl mx-auto bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 md:p-10">
         <h2 className="text-3xl md:text-4xl font-bold text-center mb-6 text-gray-900 dark:text-white">
           Create Product Listing
@@ -246,8 +289,7 @@ const CreateProduct: React.FC = () => {
         {message && (
           <div
             className={`p-4 rounded-lg text-center font-medium text-lg mb-6 ${
-              message.includes("successfully") ||
-              message.includes("Payment successful")
+              message.includes("successfully")
                 ? "bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-300"
                 : "bg-red-100 dark:bg-red-900/50 text-red-800 dark:text-red-400"
             }`}
@@ -257,33 +299,33 @@ const CreateProduct: React.FC = () => {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Other fields unchanged */}
+          {/* Title & Description */}
           <input
             type="text"
             placeholder="Product Title"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
+            value={productData.title}
+            onChange={(e) => handleChange("title", e.target.value)}
             required
             disabled={formLocked}
             className="w-full px-5 py-4 border rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
           />
-
           <textarea
             placeholder="Detailed Description"
             rows={5}
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
+            value={productData.description}
+            onChange={(e) => handleChange("description", e.target.value)}
             required
             disabled={formLocked}
             className="w-full px-5 py-4 border rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none resize-none"
           />
 
+          {/* Prices */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <input
               type="number"
               placeholder="Regular Price (KSH)"
-              value={price}
-              onChange={(e) => setPrice(e.target.value)}
+              value={productData.price}
+              onChange={(e) => handleChange("price", e.target.value)}
               required
               disabled={formLocked}
               className="px-5 py-4 border rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
@@ -291,104 +333,168 @@ const CreateProduct: React.FC = () => {
             <input
               type="number"
               placeholder="Discount Price (Optional)"
-              value={discountPrice}
-              onChange={(e) => setDiscountPrice(e.target.value)}
+              value={productData.discountPrice}
+              onChange={(e) => handleChange("discountPrice", e.target.value)}
               disabled={formLocked}
               className="px-5 py-4 border rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
             />
           </div>
 
+          {/* Stock */}
           <input
             type="number"
             placeholder="Stock Count"
-            value={stockInCount}
-            onChange={(e) => setStockInCount(e.target.value)}
+            value={productData.stockInCount}
+            onChange={(e) => handleChange("stockInCount", e.target.value)}
             required
             disabled={formLocked}
             className="w-full px-5 py-4 border rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
           />
 
-          {/* Category */}
+          {/* Category & Brand */}
           <select
-            value={category}
+            value={productData.category}
             onChange={(e) => {
-              setCategory(e.target.value);
-              setBrand("");
+              handleChange("category", e.target.value);
+              handleChange("brand", "");
             }}
             required
             disabled={formLocked}
             className="w-full px-5 py-4 border rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
           >
-            <option className="dark:bg-slate-900" value="">
-              Select Category
-            </option>
+            <option value="">Select Category</option>
             {categories.map((cat) => (
-              <option
-                className="dark:bg-slate-900"
-                key={cat.name}
-                value={cat.name}
-              >
+              <option key={cat.name} value={cat.name}>
                 {cat.name}
               </option>
             ))}
           </select>
-
-          {/* Brand */}
           <select
-            value={brand}
-            onChange={(e) => setBrand(e.target.value)}
+            value={productData.brand}
+            onChange={(e) => handleChange("brand", e.target.value)}
             required
-            disabled={!category || formLocked}
+            disabled={!productData.category || formLocked}
             className="w-full px-5 py-4 border rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none disabled:opacity-60"
           >
-            <option className="dark:bg-slate-900" value="">
-              {category ? "Select Brand" : "Select Category First"}
+            <option value="">
+              {productData.category ? "Select Brand" : "Select Category First"}
             </option>
             {selectedCategoryBrands.map((b) => (
-              <option className="dark:bg-slate-900" key={b} value={b}>
+              <option key={b} value={b}>
                 {b}
               </option>
             ))}
           </select>
 
+          {subItems.length > 0 && (
+  <select
+    value={productData.subItem || ""}
+    onChange={(e) => handleChange("subItem", e.target.value)}
+    required
+    disabled={!productData.brand || formLocked}
+    className="w-full px-5 py-4 border rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none disabled:opacity-60"
+  >
+    <option value="">Select Specific Item</option>
+    {subItems.map((item) => (
+      <option key={item} value={item}>{item}</option>
+    ))}
+  </select>
+)}
+
+          {/* Product Type & Shop Address */}
+          <div className="space-y-2">
+            <label className="block font-medium">Product Type</label>
+            <select
+              value={productData.productType}
+              onChange={(e) => handleChange("productType", e.target.value)}
+              className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-3 focus:ring-2 focus:ring-indigo-500"
+            >
+              <option value="INDIVIDUAL">Individual Seller</option>
+              <option value="SHOP">Shop / Business</option>
+            </select>
+            <p className="text-xs text-gray-500">
+              {productData.productType === "SHOP"
+                ? "Shop products must have a physical location"
+                : "Individual sellers do not require a location"}
+            </p>
+          </div>
+
+          {productData.productType === "SHOP" && (
+            <div className="space-y-4 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+              <h3 className="font-semibold text-gray-700 dark:text-gray-300">
+                Shop Details
+              </h3>
+
+              {/* Shop Name */}
+              <input
+                type="text"
+                placeholder="Shop Name"
+                value={productData.shopName}
+                onChange={(e) => handleChange("shopName", e.target.value)}
+                required
+                disabled={formLocked}
+                className="w-full border rounded-lg px-4 py-3 focus:ring-2 focus:ring-indigo-500 outline-none"
+              />
+
+              {/* Google Address */}
+              <input
+                ref={addressInputRef}
+                type="text"
+                placeholder="Search shop address using Google"
+                value={productData.shopAddress}
+                disabled={locationMode === "CURRENT"}
+                onChange={(e) => handleChange("shopAddress", e.target.value)}
+                className="w-full border rounded-lg px-4 py-3 disabled:bg-gray-100 dark:disabled:bg-gray-700"
+              />
+
+              <div className="text-center text-sm text-gray-500">OR</div>
+
+              {/* Current Location Button */}
+              <button
+                type="button"
+                onClick={recordCurrentLocation}
+                disabled={locationMode === "ADDRESS"}
+                className="w-full py-3 rounded-lg border border-indigo-600 text-indigo-600 font-semibold hover:bg-indigo-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                📍 Use My Current Location
+              </button>
+
+              {locationError && (
+                <p className="text-sm text-red-600">{locationError}</p>
+              )}
+
+              {productData.latitude !== null &&
+                productData.longitude !== null && (
+                  <p className="text-sm text-green-600">
+                    📍 Location pinned successfully
+                  </p>
+                )}
+            </div>
+          )}
+
           {/* Condition & Warranty */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <select
-              value={condition}
-              onChange={(e) => setCondition(e.target.value)}
+              value={productData.condition}
+              onChange={(e) => handleChange("condition", e.target.value)}
               required
               disabled={formLocked}
               className="px-5 py-4 border rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
             >
-              <option className="dark:bg-slate-900" value="">
-                Select Condition
-              </option>
-              <option className="dark:bg-slate-900" value="BRAND_NEW">
-                Brand New
-              </option>
-              <option className="dark:bg-slate-900" value="SLIGHTLY_USED">
-                Slightly Used
-              </option>
-              <option className="dark:bg-slate-900" value="REFURBISHED">
-                Refurbished
-              </option>
+              <option value="">Select Condition</option>
+              <option value="BRAND_NEW">Brand New</option>
+              <option value="SLIGHTLY_USED">Slightly Used</option>
+              <option value="REFURBISHED">Refurbished</option>
             </select>
-
             <select
-              value={warranty}
-              onChange={(e) => setWarranty(e.target.value)}
+              value={productData.warranty}
+              onChange={(e) => handleChange("warranty", e.target.value)}
               disabled={formLocked}
               className="px-5 py-4 border rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
             >
-              <option className="dark:bg-slate-900" value="">
-                No Warranty
-              </option>
+              <option value="">No Warranty</option>
               {warrantyOptions.map((opt) => (
-                <option
-                  className="dark:bg-slate-900"
-                  key={opt.value}
-                  value={opt.value}
-                >
+                <option key={opt.value} value={opt.value}>
                   {opt.label}
                 </option>
               ))}
@@ -400,26 +506,21 @@ const CreateProduct: React.FC = () => {
             <label className="flex items-center gap-3 cursor-pointer">
               <input
                 type="checkbox"
-                checked={quickSale}
-                onChange={(e) => setQuickSale(e.target.checked)}
+                checked={productData.quickSale}
+                onChange={(e) => handleChange("quickSale", e.target.checked)}
                 disabled={formLocked}
                 className="w-6 h-6 text-indigo-600 rounded focus:ring-indigo-500"
               />
               <span className="text-lg font-medium">Quick Sale</span>
             </label>
-
             <select
-              value={status}
-              onChange={(e) => setStatus(e.target.value)}
+              value={productData.status}
+              onChange={(e) => handleChange("status", e.target.value)}
               disabled={formLocked}
               className="px-5 py-4 border rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
             >
-              <option className="dark:bg-slate-900" value="onsale">
-                On Sale
-              </option>
-              <option className="dark:bg-slate-900" value="sold">
-                Sold
-              </option>
+              <option value="onsale">On Sale</option>
+              <option value="sold">Sold</option>
             </select>
           </div>
 
@@ -427,26 +528,23 @@ const CreateProduct: React.FC = () => {
           <input
             type="text"
             placeholder="WhatsApp Number (e.g. +254712345678)"
-            value={whatsappNumber}
-            onChange={(e) => setWhatsappNumber(e.target.value)}
+            value={productData.whatsappNumber}
+            onChange={(e) => handleChange("whatsappNumber", e.target.value)}
             required
             disabled={formLocked}
             className="w-full px-5 py-4 border rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
           />
 
-          {/* Image Upload Section */}
+          {/* Image Upload */}
           <div>
             <label className="block text-lg font-medium mb-3">
               Product Images (Max {MAX_IMAGES})
             </label>
-
             <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
               {images.length > 0
                 ? `${images.length}/${MAX_IMAGES} images selected`
                 : "No images selected yet"}
             </p>
-
-            {/* File Input */}
             {images.length < MAX_IMAGES && (
               <input
                 type="file"
@@ -457,15 +555,6 @@ const CreateProduct: React.FC = () => {
                 className="w-full text-gray-700 dark:text-gray-200 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-indigo-600 file:text-white hover:file:bg-indigo-700 disabled:file:bg-gray-400"
               />
             )}
-
-            {images.length >= MAX_IMAGES && (
-              <p className="text-sm text-orange-600 dark:text-orange-400 mt-3">
-                Maximum {MAX_IMAGES} images reached. Remove some to add new
-                ones.
-              </p>
-            )}
-
-            {/* Image Previews */}
             {previews.length > 0 && (
               <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-5 mt-6">
                 {previews.map((src, index) => (
@@ -475,15 +564,11 @@ const CreateProduct: React.FC = () => {
                       alt={`Preview ${index + 1}`}
                       className="w-full h-40 object-cover rounded-lg border-2 border-gray-300 dark:border-gray-600 shadow-md"
                     />
-
-                    {/* Cover Badge */}
                     {index === 0 && (
                       <span className="absolute top-2 left-2 bg-green-600 text-white text-xs px-3 py-1 rounded">
                         Cover
                       </span>
                     )}
-
-                    {/* Remove Button */}
                     <button
                       type="button"
                       onClick={() => removeImage(index)}

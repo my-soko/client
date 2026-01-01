@@ -1,19 +1,22 @@
-export interface ProductPayload {
+export type ProductType = "INDIVIDUAL" | "SHOP";
+
+export type ProductFormData = {
   title: string;
   description: string;
-  price: number;
-  discountPrice: number | null;
-  stockInCount: number;
+  price: string;
+  discountPrice: string;
+  stockInCount: string;
   category: string;
   brand: string;
   subItem?: string | null;
-  warranty: string | null;
-  condition: "BRAND_NEW" | "SLIGHTLY_USED" | "REFURBISHED";
+  warranty: string;
+  condition: string;
+  status: string;
+  quickSale: boolean;
   whatsappNumber: string;
-  imageUrls: string[];
   productType: "INDIVIDUAL" | "SHOP";
   shopName: string;
   shopAddress: string;
   latitude: number | null;
   longitude: number | null;
-}
+};

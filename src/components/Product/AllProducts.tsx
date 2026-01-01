@@ -170,6 +170,15 @@ const AllProducts: React.FC = () => {
                             {product.description}
                           </p>
 
+                          {product.shopAddress && (
+                            <p className="mt-2 text-sm text-indigo-600 dark:text-indigo-400">
+                              <span className="text-gray-200">
+                                {product.productType} Located At 📍
+                              </span>{" "}
+                              {product.shopAddress}
+                            </p>
+                          )}
+
                           {product.averageRating !== undefined && (
                             <div className="flex items-center gap-2 mt-3">
                               <div className="flex text-lg">

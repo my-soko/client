@@ -1,6 +1,6 @@
 // src/components/Header/Header.tsx
 import React, { useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch, RootState } from "../../redux/store";
 
@@ -39,6 +39,9 @@ const Header: React.FC = () => {
 
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
 
+  const [showShopMap, setShowShopMap] = React.useState(false);
+
+  const navigate = useNavigate();
   useEffect(() => {
     if (user) dispatch(fetchFavourites());
   }, [dispatch, user]);
@@ -179,6 +182,43 @@ const Header: React.FC = () => {
                 </option>
               ))}
           </select>
+        </div>
+
+        <div className="relative inline-block">
+          {" "}
+          {/* Make this relative */}
+          <button
+            onClick={() => setShowShopMap((prev) => !prev)}
+            className="px-4 py-2 rounded-lg bg-indigo-600 text-white font-semibold hover:bg-indigo-700"
+          >
+            🗺️ All Shops Map
+          </button>
+          {showShopMap && (
+            <div className="absolute left-0 top-full mt-2 bg-white dark:bg-gray-800 shadow-xl rounded-lg p-4 z-50 max-h-64 overflow-y-auto w-56">
+              <button
+                onClick={() => {
+                  navigate("/shops-map");
+                  setShowShopMap(false);
+                }}
+                className="block w-full text-left px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+              >
+                All Pinned Shops
+              </button>
+
+              {categories.map((cat) => (
+                <button
+                  key={cat.name}
+                  onClick={() => {
+                    navigate(`/shops-map/${cat.name}`);
+                    setShowShopMap(false);
+                  }}
+                  className="block w-full text-left px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+                >
+                  {cat.name}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Desktop Actions */}

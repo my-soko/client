@@ -17,14 +17,14 @@ import { fetchProfile } from "./redux/reducers/authReducer";
 import { useEffect } from "react";
 import FavouritesPage from "./components/Favourite/FavouritesPage";
 import CategoryProducts from "./components/Product/CategoryProducts";
+import ShopsMapPage from "./components/Shop/ShopsMapPage";
 
 const App = () => {
-
   // const { user } = useSelector((state: RootState) => state.auth);
   const dispatch = useDispatch<AppDispatch>();
 
   useEffect(() => {
-      dispatch(fetchProfile());
+    dispatch(fetchProfile());
   }, [dispatch]);
   return (
     <div>
@@ -40,7 +40,9 @@ const App = () => {
         <Route path="/reset-password/:token" element={<ResetPassword />} />
         <Route path="/favourites" element={<FavouritesPage />} />
         <Route path="/category/:category" element={<CategoryProducts />} />
-
+        <Route path="/shops-map" element={<ShopsMapPage />} />
+        <Route path="/shops-map/:category" element={<ShopsMapPage />} />
+        <Route path="/shops-map/product/:id" element={<ProductDetail />} />
 
         <Route
           path="/create"
