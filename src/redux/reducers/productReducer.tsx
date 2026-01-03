@@ -31,10 +31,6 @@ export interface Product {
   stockTotal: number;
   seller: Seller;
   productType: ProductType;
-   shopName: string;
- shopAddress: string;
-  latitude: number | null;
-  longitude: number | null;
   averageRating?: number;
   totalReviews?: number;
   whatsappLink?: string;

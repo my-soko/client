@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import type { AppDispatch, RootState } from "../../redux/store";
@@ -7,8 +7,8 @@ import { warrantyOptions } from "../../util/Warranty";
 import PaymentForm from "../Payment/PaymentForm";
 import { createProduct } from "../../redux/reducers/productReducer";
 import axios from "axios";
-import { usePlacesAutocomplete } from "../../hooks/usePlacesAutocomplete";
 import type { ProductFormData } from "../../util/productType";
+import { fetchMyShops } from "../../redux/reducers/shopSlice";
 
 const MAX_IMAGES = 5;
 
@@ -39,80 +39,36 @@ const CreateProduct: React.FC = () => {
     quickSale: false,
     whatsappNumber: user?.whatsappNumber || "",
     productType: "INDIVIDUAL",
-    shopName: "",
-    shopAddress: "",
-    latitude: null,
-    longitude: null,
+    shopId: "",
   });
 
   const [images, setImages] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
-  type LocationMode = "ADDRESS" | "CURRENT" | null;
-  const [locationMode, setLocationMode] = useState<LocationMode>(null);
 
-  const [locationError, setLocationError] = useState("");
 
-  // Google Places Autocomplete
-  const handlePlaceSelect = (place: google.maps.places.PlaceResult) => {
-    if (!place.geometry || !place.geometry.location) {
-      setLocationError("Unable to get location coordinates.");
-      return;
-    }
 
-    const lat = place.geometry.location.lat();
-    const lng = place.geometry.location.lng();
-
-    setLocationMode("ADDRESS");
-    setProductData((prev) => ({
-      ...prev,
-      shopAddress: place.formatted_address || "",
-      latitude: lat,
-      longitude: lng,
-    }));
-
-    setLocationError("");
-  };
-
-  const addressInputRef = usePlacesAutocomplete(
-    handlePlaceSelect,
-    productData.productType === "SHOP"
-  );
-
- const selectedCategory = categories.find(
+  
+const selectedCategory = categories.find(
   (cat) => cat.name === productData.category
 );
 
+
 const selectedCategoryBrands = selectedCategory?.brands || [];
 const subItems = selectedCategory?.subItems || [];
+
+const { myShops } = useSelector((state: RootState) => state.shop);
+
+useEffect(() => {
+  dispatch(fetchMyShops());
+}, [dispatch]);
+
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleChange = (key: keyof typeof productData, value: any) => {
     setProductData((prev) => ({ ...prev, [key]: value }));
   };
 
-  const recordCurrentLocation = () => {
-    if (!navigator.geolocation) {
-      setLocationError("Geolocation is not supported by your browser.");
-      return;
-    }
-
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        setLocationMode("CURRENT");
-        setProductData((prev) => ({
-          ...prev,
-          shopAddress: "",
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude,
-        }));
-        setLocationError("");
-      },
-      () => {
-        setLocationError("Unable to retrieve your location.");
-      },
-      { enableHighAccuracy: true }
-    );
-  };
+ 
 
   // Images
   const addImages = (files: File[]) => {
@@ -172,12 +128,7 @@ const subItems = selectedCategory?.subItems || [];
       return setMessage("Please upload at least one product image.");
     if (!productData.whatsappNumber.trim())
       return setMessage("Please provide your WhatsApp number.");
-    if (productData.productType === "SHOP") {
-      if (!productData.shopName.trim())
-        return setMessage("Please provide your shop name.");
-      if (productData.latitude == null || productData.longitude == null)
-        return setMessage("Please pin a valid shop location on the map.");
-    }
+   
 
     if (
       !productData.title.trim() ||
@@ -210,16 +161,7 @@ const subItems = selectedCategory?.subItems || [];
           : null,
         stockInCount: Number(productData.stockInCount) || 1,
         imageUrls: uploadedUrls,
-        shopName:
-          productData.productType === "SHOP" ? productData.shopName : "",
-        shopAddress:
-          productData.productType === "SHOP" ? productData.shopAddress : null,
-
-        latitude:
-          productData.productType === "SHOP" ? productData.latitude : null,
-
-        longitude:
-          productData.productType === "SHOP" ? productData.longitude : null,
+        
       };
 
       if (isAdmin) return processProductCreation(payload);
@@ -418,59 +360,32 @@ const subItems = selectedCategory?.subItems || [];
                 : "Individual sellers do not require a location"}
             </p>
           </div>
+{productData.productType === "SHOP" && (
+  <div className="space-y-4 rounded-xl border p-4">
+    <h3 className="font-semibold">Select Shop</h3>
 
-          {productData.productType === "SHOP" && (
-            <div className="space-y-4 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-              <h3 className="font-semibold text-gray-700 dark:text-gray-300">
-                Shop Details
-              </h3>
+    <select
+      value={productData.shopId || ""}
+      onChange={(e) => handleChange("shopId", e.target.value)}
+      required
+      className="w-full border rounded-lg px-4 py-3"
+    >
+      <option value="">Select a Shop</option>
+      {myShops.map((shop) => (
+        <option key={shop.id} value={shop.id}>
+          {shop.name}
+        </option>
+      ))}
+    </select>
 
-              {/* Shop Name */}
-              <input
-                type="text"
-                placeholder="Shop Name"
-                value={productData.shopName}
-                onChange={(e) => handleChange("shopName", e.target.value)}
-                required
-                disabled={formLocked}
-                className="w-full border rounded-lg px-4 py-3 focus:ring-2 focus:ring-indigo-500 outline-none"
-              />
+    {myShops.length === 0 && (
+      <p className="text-sm text-red-500">
+        You don’t have any shops yet. Create one first.
+      </p>
+    )}
+  </div>
+)}
 
-              {/* Google Address */}
-              <input
-                ref={addressInputRef}
-                type="text"
-                placeholder="Search shop address using Google"
-                value={productData.shopAddress}
-                disabled={locationMode === "CURRENT"}
-                onChange={(e) => handleChange("shopAddress", e.target.value)}
-                className="w-full border rounded-lg px-4 py-3 disabled:bg-gray-100 dark:disabled:bg-gray-700"
-              />
-
-              <div className="text-center text-sm text-gray-500">OR</div>
-
-              {/* Current Location Button */}
-              <button
-                type="button"
-                onClick={recordCurrentLocation}
-                disabled={locationMode === "ADDRESS"}
-                className="w-full py-3 rounded-lg border border-indigo-600 text-indigo-600 font-semibold hover:bg-indigo-50 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                📍 Use My Current Location
-              </button>
-
-              {locationError && (
-                <p className="text-sm text-red-600">{locationError}</p>
-              )}
-
-              {productData.latitude !== null &&
-                productData.longitude !== null && (
-                  <p className="text-sm text-green-600">
-                    📍 Location pinned successfully
-                  </p>
-                )}
-            </div>
-          )}
 
           {/* Condition & Warranty */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

@@ -1,42 +1,29 @@
 import { createSelector } from "@reduxjs/toolkit";
 import type { RootState } from "../store";
-import type { Shop } from "../../types/shop";
+import type { Shop } from "../../types/Shops";
 
-export const selectShopsFromProducts = createSelector(
-  [(state: RootState) => state.product.products],
-  (products): Shop[] => {
-    const shopMap = new Map<string, Shop>();
+export const selectPinnedShops = (state: RootState): Shop[] => state.shop.allShops;
 
-    products.forEach((p) => {
-      if (
-        p.productType !== "SHOP" ||
-        !p.latitude ||
-        !p.longitude ||
-        !p.shopName
-      )
-        return;
+export const makeSelectShopsByProductCategory = () =>
+  createSelector(
+    [
+      (state: RootState) => state.shop.allShops,
+      (_: RootState, category?: string) => category,
+    ],
+    (shops, category): Shop[] => {
+      // If no category, return ALL verified shops
+      if (!category) return shops.filter(shop => shop.isVerified);
 
-      if (!shopMap.has(p.shopName)) {
-        shopMap.set(p.shopName, {
-          shopName: p.shopName,
-          shopAddress: p.shopAddress,
-          latitude: p.latitude,
-          longitude: p.longitude,
-          categories: [p.category],
-          productsCount: 1,
-          totalStock: p.stockInCount, 
-        });
-      } else {
-        const shop = shopMap.get(p.shopName)!;
-        shop.productsCount += 1;
-        shop.totalStock += p.stockInCount; // sum stock
-        if (!shop.categories.includes(p.category)) {
-          shop.categories.push(p.category);
-        }
-      }
-    });
+      // If category is selected, return shops with products in that category
+      return shops.filter(
+        shop =>
+          shop.isVerified &&
+          shop.products?.some(
+            product => product.category?.toLowerCase() === category.toLowerCase()
+          )
+      );
+    }
+  );
 
-    return Array.from(shopMap.values());
-  }
-);
+
 

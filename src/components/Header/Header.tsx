@@ -3,6 +3,7 @@ import React, { useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch, RootState } from "../../redux/store";
+import { Store } from "lucide-react";
 
 import { logoutUser } from "../../redux/reducers/authReducer";
 import { categories } from "../../util/Category";
@@ -40,6 +41,7 @@ const Header: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
 
   const [showShopMap, setShowShopMap] = React.useState(false);
+  const [showShopMenu, setShowShopMenu] = React.useState(false);
 
   const navigate = useNavigate();
   useEffect(() => {
@@ -98,12 +100,9 @@ const Header: React.FC = () => {
   const closeMobileMenu = () => setMobileMenuOpen(false);
 
   return (
-    <header className="bg-white dark:bg-gray-900 shadow-md sticky top-0 z-50 border-b border-gray-200 dark:border-gray-700">
-      <div
-        className={`w-full bg-indigo-600 text-white text-sm transition-transform duration-300 ${
-          showTopBar ? "translate-y-0" : "-translate-y-full"
-        }`}
-      >
+<header className="bg-white dark:bg-gray-900 shadow sticky top-0 z-50 border-b border-gray-200 dark:border-gray-700">
+       <div className={`w-full bg-indigo-600 text-white text-sm transition-transform duration-300 ${showTopBar ? "translate-y-0" : "-translate-y-full"}`}>
+
         <div className="max-w-7xl mx-auto px-4 py-2 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <span>📞 +254 716 570 983</span>
@@ -185,13 +184,11 @@ const Header: React.FC = () => {
         </div>
 
         <div className="relative inline-block">
-          {" "}
-          {/* Make this relative */}
           <button
             onClick={() => setShowShopMap((prev) => !prev)}
-            className="px-4 py-2 rounded-lg bg-indigo-600 text-white font-semibold hover:bg-indigo-700"
+            className="py-2 rounded-lg bg-indigo-600 text-white font-semibold hover:bg-indigo-700"
           >
-            🗺️ All Shops Map
+            🗺️ Shops Map
           </button>
           {showShopMap && (
             <div className="absolute left-0 top-full mt-2 bg-white dark:bg-gray-800 shadow-xl rounded-lg p-4 z-50 max-h-64 overflow-y-auto w-56">
@@ -238,6 +235,49 @@ const Header: React.FC = () => {
               <span className="hidden lg:inline">Favourites</span>
             </Link>
           )}
+
+          {/* Shops Menu */}
+          <div className="relative">
+            <button
+              onClick={() => setShowShopMenu((p) => !p)}
+              className="flex items-center gap-2 text-gray-700 dark:text-gray-300 hover:text-indigo-600 font-medium"
+            >
+              <Store size={20} />
+              Shops
+            </button>
+
+            {showShopMenu && (
+              <div className="absolute right-0 mt-3 w-48 bg-white dark:bg-gray-800 shadow-xl rounded-lg overflow-hidden z-50">
+                <Link
+                  to="/shops-map"
+                  onClick={() => setShowShopMenu(false)}
+                  className="block px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700"
+                >
+                  🗺️ All Shops Map
+                </Link>
+
+                {user && (
+                  <>
+                    <Link
+                      to="/shops"
+                      onClick={() => setShowShopMenu(false)}
+                      className="block px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700"
+                    >
+                      🏬 My Shops
+                    </Link>
+
+                    <Link
+                      to="/shops/create"
+                      onClick={() => setShowShopMenu(false)}
+                      className="block px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700"
+                    >
+                      ➕ Create Shop
+                    </Link>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
 
           {/* Auth */}
           {user ? (
@@ -483,6 +523,36 @@ const Header: React.FC = () => {
                 <span>Favourites ({favourites.length})</span>
               </Link>
             )}
+
+            <div className="border-t pt-4 space-y-3">
+              <Link
+                to="/shops-map"
+                onClick={closeMobileMenu}
+                className="block font-medium text-gray-700 dark:text-gray-300"
+              >
+                🗺️ All Shops Map
+              </Link>
+
+              {user && (
+                <>
+                  <Link
+                    to="/shops/my"
+                    onClick={closeMobileMenu}
+                    className="block font-medium text-gray-700 dark:text-gray-300"
+                  >
+                    🏬 My Shops
+                  </Link>
+
+                  <Link
+                    to="/shops/create"
+                    onClick={closeMobileMenu}
+                    className="block font-medium text-gray-700 dark:text-gray-300"
+                  >
+                    ➕ Create Shop
+                  </Link>
+                </>
+              )}
+            </div>
 
             <div className="pt-4 border-t dark:border-gray-700 space-y-4">
               {user ? (

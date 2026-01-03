@@ -18,6 +18,10 @@ import { useEffect } from "react";
 import FavouritesPage from "./components/Favourite/FavouritesPage";
 import CategoryProducts from "./components/Product/CategoryProducts";
 import ShopsMapPage from "./components/Shop/ShopsMapPage";
+import CreateShop from "./components/Shop/CreateShop";
+import MyShops from "./components/Shop/MyShops";
+import UpdateShop from "./components/Shop/UpdateShop";
+import ShopDetail from "./components/Shop/ShopDetail";
 
 const App = () => {
   // const { user } = useSelector((state: RootState) => state.auth);
@@ -43,6 +47,32 @@ const App = () => {
         <Route path="/shops-map" element={<ShopsMapPage />} />
         <Route path="/shops-map/:category" element={<ShopsMapPage />} />
         <Route path="/shops-map/product/:id" element={<ProductDetail />} />
+        <Route
+          path="/shops/create"
+          element={
+            <RequireAuth>
+              <CreateShop />
+            </RequireAuth>
+          }
+        />
+
+        <Route
+          path="/shops"
+          element={
+            <RequireAuth>
+              <MyShops />
+            </RequireAuth>
+          }
+        />
+
+        <Route
+          path="/shops/:id"
+          element={
+            <RequireAuth>
+              <ShopDetail />
+            </RequireAuth>
+          }
+        />
 
         <Route
           path="/create"
@@ -57,6 +87,15 @@ const App = () => {
           element={
             <RequireAuth>
               <UpdateProduct />
+            </RequireAuth>
+          }
+        />
+
+        <Route
+          path="/shops/edit/:id"
+          element={
+            <RequireAuth>
+              <UpdateShop />
             </RequireAuth>
           }
         />

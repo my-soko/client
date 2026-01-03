@@ -12,8 +12,5 @@ export interface ProductPayload {
   whatsappNumber: string;
   imageUrls: string[];
   productType: "INDIVIDUAL" | "SHOP";
-  shopName: string;
-  shopAddress: string;
-  latitude: number | null;
-  longitude: number | null;
+  shopId?: string;
 }
