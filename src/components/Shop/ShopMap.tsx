@@ -1,10 +1,12 @@
+import React, { useEffect, useState } from "react";
 import { MapContainer, TileLayer, Marker, Popup, Tooltip } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { useSelector } from "react-redux";
-import { useEffect, useState } from "react";
-import { selectShopsFromProducts } from "../../redux/selectors/shopSelectors";
+import { useDispatch, useSelector } from "react-redux";
+import type { AppDispatch, RootState } from "../../redux/store";
+import { fetchAllShops } from "../../redux/reducers/shopSlice";
 import RouteControl from "../Map/RouteControl";
+import { makeSelectShopsByProductCategory } from "../../redux/selectors/shopSelectors";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -17,196 +19,177 @@ L.Icon.Default.mergeOptions({
 });
 
 interface Props {
-  selectedCategory: string;
+  selectedCategory?: string;
+  userLocation?: { lat: number; lng: number };
 }
 
-const ShopMap: React.FC<Props> = ({ selectedCategory }) => {
+const calculateDistance = (
+  lat1: number,
+  lon1: number,
+  lat2: number,
+  lon2: number
+): number => {
+  const R = 6371; // km
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
 
-  
-  const shops = useSelector(selectShopsFromProducts);
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) ** 2;
 
-  const [userLocation, setUserLocation] = useState<{
+  return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
+};
+
+const ShopMap: React.FC<Props> = ({ selectedCategory, userLocation }) => {
+  const dispatch = useDispatch<AppDispatch>();
+  const [selectedShop, setSelectedShop] = useState<{
     lat: number;
     lng: number;
   } | null>(null);
+
+  useEffect(() => {
+    dispatch(fetchAllShops());
+  }, [dispatch]);
+
+  // Use the category selector
+  const selectShopsByCategory = makeSelectShopsByProductCategory();
+  const shops = useSelector((state: RootState) =>
+    selectShopsByCategory(state, selectedCategory)
+  );
+
+  console.log("shops:", shops);
+
   const [distanceToShop, setDistanceToShop] = useState<Record<string, number>>(
     {}
   );
 
-  const visibleShops = selectedCategory
-    ? shops.filter((shop) =>
-        shop.categories.some(
-          (cat) => cat.toLowerCase() === selectedCategory.toLowerCase()
-        )
-      )
-    : shops;
+  useEffect(() => {
+    if (!userLocation) return;
 
-  // Haversine formula
-  const calculateDistance = (
-    lat1: number,
-    lon1: number,
-    lat2: number,
-    lon2: number
-  ) => {
-    const R = 6371; // km
-    const dLat = ((lat2 - lat1) * Math.PI) / 180;
-    const dLon = ((lon2 - lon1) * Math.PI) / 180;
-    const a =
-      Math.sin(dLat / 2) ** 2 +
-      Math.cos((lat1 * Math.PI) / 180) *
-        Math.cos((lat2 * Math.PI) / 180) *
-        Math.sin(dLon / 2) ** 2;
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return R * c;
-  };
-
-  const updateDistances = (location: { lat: number; lng: number }) => {
     const distances: Record<string, number> = {};
-    visibleShops.forEach((shop) => {
-      distances[shop.shopName] = parseFloat(
+    shops.forEach((shop) => {
+      distances[shop.id] = Number(
         calculateDistance(
-          location.lat,
-          location.lng,
+          userLocation.lat,
+          userLocation.lng,
           shop.latitude,
           shop.longitude
         ).toFixed(2)
       );
     });
+
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setDistanceToShop(distances);
-  };
+  }, [shops, userLocation]);
 
-  useEffect(() => {
-    const handleUseMyLocation = () => {
-      if (!navigator.geolocation) return alert("Geolocation not supported");
-      navigator.geolocation.getCurrentPosition((pos) => {
-        const loc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-        setUserLocation(loc);
-        updateDistances(loc);
-      });
-    };
+return (
+  <div className="h-[80vh] w-full rounded-xl overflow-hidden shadow-lg">
+    <MapContainer
+      center={userLocation || [-1.286389, 36.817223]}
+      zoom={12}
+      className="h-full w-full"
+    >
+      <TileLayer
+        attribution="© OpenStreetMap contributors"
+        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+      />
 
-    const handleSetCustomLocation = async (event: CustomEvent<string>) => {
-      const query = event.detail;
-      if (!query) return;
-      try {
-        const res = await fetch(
-          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
-            query
-          )}`
-        );
-        const data = await res.json();
-        if (data && data[0]) {
-          const loc = {
-            lat: parseFloat(data[0].lat),
-            lng: parseFloat(data[0].lon),
-          };
-          setUserLocation(loc);
-          updateDistances(loc);
-        } else {
-          alert("Location not found");
-        }
-      } catch {
-        alert("Failed to fetch location");
-      }
-    };
+      {/* All shop markers */}
+      {shops.map((shop) => (
+        <Marker
+          key={shop.id}
+          position={[shop.latitude, shop.longitude]}
+          eventHandlers={{
+            click: () => {
+              setSelectedShop({
+                lat: shop.latitude,
+                lng: shop.longitude,
+              });
+            },
+          }}
+        >
+          <Tooltip direction="top" offset={[0, -10]} permanent>
+            {shop.name}
+          </Tooltip>
 
-    const handleUpdateUserLocation = (
-      event: CustomEvent<{ lat: number; lng: number }>
-    ) => {
-      setUserLocation(event.detail);
-      updateDistances(event.detail);
-    };
-
-    window.addEventListener(
-      "useMyLocation",
-      handleUseMyLocation as EventListener
-    );
-    window.addEventListener(
-      "setCustomLocation",
-      handleSetCustomLocation as unknown as EventListener
-    );
-    window.addEventListener(
-      "updateUserLocation",
-      handleUpdateUserLocation as EventListener
-    );
-
-    return () => {
-      window.removeEventListener(
-        "useMyLocation",
-        handleUseMyLocation as EventListener
-      );
-      window.removeEventListener(
-        "setCustomLocation",
-        handleSetCustomLocation as unknown as EventListener
-      );
-      window.removeEventListener(
-        "updateUserLocation",
-        handleUpdateUserLocation as EventListener
-      );
-    };
-  }, [visibleShops]);
-
-  return (
-    <div className="h-[80vh] w-full mb-7 rounded-xl overflow-hidden shadow-lg">
-      <MapContainer
-        center={userLocation || [-1.286389, 36.817223]}
-        zoom={12}
-        className="h-full w-full"
-        key={
-          userLocation ? `${userLocation.lat}-${userLocation.lng}` : "default"
-        }
-      >
-        <TileLayer
-          attribution="© OpenStreetMap contributors"
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
-
-        {visibleShops.map((shop) => (
-          <Marker
-            key={`${shop.shopName}-${shop.latitude}`}
-            position={[shop.latitude, shop.longitude]}
-          >
-            <Tooltip direction="top" offset={[0, -10]} permanent>
-              {shop.shopName}
-            </Tooltip>
+        
             <Popup>
               <div className="space-y-1">
-                <h3 className="font-bold">{shop.shopName}</h3>
-                <p className="text-sm">{shop.shopAddress}</p>
-                <p className="text-xs">
-                  Product Category:{" "}
-                  <strong>{shop.categories.join(", ")}</strong>
-                </p>
-                <p className="text-xs">
-                  Products in stock: <strong>{shop.totalStock}</strong>
-                </p>
+                <h3 className="font-bold text-lg">{shop.name}</h3>
+                <p className="text-sm">{shop.description}</p>
+                <p className="text-sm">{shop.address}</p>
 
-                {userLocation && distanceToShop[shop.shopName] && (
-                  <p className="text-xs mt-1">
-                    Distance from you:{" "}
-                    <strong>{distanceToShop[shop.shopName]} km</strong>
+                {shop.phone && (
+                  <p className="text-xs">
+                    <span className="font-semibold">Phone:</span> {shop.phone}
                   </p>
                 )}
+                {shop.email && (
+                  <p className="text-xs">
+                    <span className="font-semibold">Email:</span> {shop.email}
+                  </p>
+                )}
+                {shop.website && (
+                  <p className="text-xs">
+                    <span className="font-semibold">Website:</span>{" "}
+                    <a
+                      href={
+                        shop.website.startsWith("http")
+                          ? shop.website
+                          : `https://${shop.website}`
+                      }
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-indigo-600 hover:underline"
+                    >
+                      {shop.website}
+                    </a>
+                  </p>
+                )}
+
+                {(shop.products || []).length > 0 && (
+                  <div className="mt-1">
+                    <p className="text-xs font-semibold">Top products:</p>
+                    <ul className="list-disc list-inside text-xs">
+                      {(shop.products || []).slice(0, 5).map((product) => (
+                        <li key={product.id}>
+                          {product.title} – KES {product.price}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {userLocation && distanceToShop[shop.id] && (
+                  <p className="text-xs mt-1">
+                    Distance: <b>{distanceToShop[shop.id]} km</b>
+                  </p>
+                )}
+
+                <p className="text-xs">
+                  {shop.isVerified ? "✅ Verified" : "⚠️ Not Verified"}
+                </p>
               </div>
             </Popup>
+        </Marker>
+      ))}
 
-            {userLocation && (
-              <RouteControl
-                from={userLocation}
-                to={{ lat: shop.latitude, lng: shop.longitude }}
-              />
-            )}
-          </Marker>
-        ))}
+      {/* User's location marker */}
+      {userLocation && (
+        <Marker position={[userLocation.lat, userLocation.lng]}>
+          <Popup>Your location</Popup>
+        </Marker>
+      )}
 
-        {userLocation && (
-          <Marker position={[userLocation.lat, userLocation.lng]}>
-            <Popup>Your location</Popup>
-          </Marker>
-        )}
-      </MapContainer>
-    </div>
-  );
+      {/* SINGLE RouteControl - only when a shop is selected */}
+      {userLocation && selectedShop && (
+        <RouteControl from={userLocation} to={selectedShop} />
+      )}
+    </MapContainer>
+  </div>
+);
 };
 
 export default ShopMap;

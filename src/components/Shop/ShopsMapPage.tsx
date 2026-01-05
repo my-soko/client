@@ -1,32 +1,40 @@
+// src/pages/ShopsMapPage.tsx
+import React, { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
-import ShopMap from "./ShopMap";
-import React, { useState } from "react";
 import { usePlacesAutocomplete } from "../../hooks/usePlacesAutocomplete";
+import ShopMap from "./ShopMap";
 
-const ShopsMapPage = () => {
+const ShopsMapPage: React.FC = () => {
   const { category } = useParams<{ category?: string }>();
   const navigate = useNavigate();
-
+  const [userLocation, setUserLocation] = useState<{
+    lat: number;
+    lng: number;
+  } | null>(null);
   const [customLocation, setCustomLocation] = useState("");
+
+  // Geolocation
+  const getCurrentLocation = () => {
+    if (!navigator.geolocation) return alert("Geolocation not supported");
+    navigator.geolocation.getCurrentPosition((pos) => {
+      setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+    });
+  };
 
   // Autocomplete input
   const inputRef = usePlacesAutocomplete((place) => {
     if (place.geometry?.location) {
       const lat = place.geometry.location.lat();
       const lng = place.geometry.location.lng();
-      // Update ShopMap
-      const event = new CustomEvent("updateUserLocation", {
-        detail: { lat, lng },
-      });
-      window.dispatchEvent(event);
+      setUserLocation({ lat, lng });
     }
   }, true);
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-6 space-y-4">
       <button
-        onClick={() => navigate("/")}
+        onClick={() => navigate(-1)}
         className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition"
       >
         <ArrowLeft size={20} />
@@ -34,13 +42,12 @@ const ShopsMapPage = () => {
       </button>
 
       <h1 className="text-2xl font-bold">
-        To Shops Map {category && `– ${category}`}
+        Shops Map {category && `– ${category}`}
       </h1>
 
-      {/* Distance & Directions Input */}
       <div className="flex flex-col sm:flex-row gap-2 mb-4">
         <button
-          onClick={() => window.dispatchEvent(new CustomEvent("useMyLocation"))}
+          onClick={getCurrentLocation}
           className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition"
         >
           Use My Current Location
@@ -58,8 +65,10 @@ const ShopsMapPage = () => {
         </div>
       </div>
 
-      {/* Map */}
-      <ShopMap selectedCategory={category || ""} />
+      <ShopMap
+        selectedCategory={category}
+        userLocation={userLocation || undefined}
+      />
     </div>
   );
 };

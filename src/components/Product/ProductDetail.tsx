@@ -5,20 +5,8 @@ import { fetchProductById } from "../../redux/reducers/productReducer";
 import type { AppDispatch, RootState } from "../../redux/store";
 import ProductReviews from "../Review/ProductReviews";
 import { formatDate } from "../../util/FormDate";
-import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
-import L from "leaflet";
-import { usePlacesAutocomplete } from "../../hooks/usePlacesAutocomplete";
-import RouteControl from "../Map/RouteControl";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-delete (L.Icon.Default.prototype as any)._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl:
-    "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png",
-  iconUrl:
-    "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png",
-  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
-});
+
 
 const ProductDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -31,68 +19,7 @@ const ProductDetail: React.FC = () => {
   const { user } = useSelector((state: RootState) => state.auth);
 
   const [mainImage, setMainImage] = useState<string | null>(null);
-  const [userLocation, setUserLocation] = useState<{
-    lat: number;
-    lng: number;
-  } | null>(null);
-  const [distanceKm, setDistanceKm] = useState<number | null>(null);
-  const [customLocation, setCustomLocation] = useState<string>(""); // New input for custom location
-
-  const calculateDistance = (
-    lat1: number,
-    lon1: number,
-    lat2: number,
-    lon2: number
-  ) => {
-    const R = 6371;
-    const dLat = ((lat2 - lat1) * Math.PI) / 180;
-    const dLon = ((lon2 - lon1) * Math.PI) / 180;
-    const a =
-      Math.sin(dLat / 2) ** 2 +
-      Math.cos((lat1 * Math.PI) / 180) *
-        Math.cos((lat2 * Math.PI) / 180) *
-        Math.sin(dLon / 2) ** 2;
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return R * c;
-  };
-
-  const inputRef = usePlacesAutocomplete((place) => {
-    if (place.geometry?.location) {
-      const lat = place.geometry.location.lat();
-      const lng = place.geometry.location.lng();
-      setUserLocation({ lat, lng });
-
-      if (currentProduct?.latitude && currentProduct?.longitude) {
-        const d = calculateDistance(
-          lat,
-          lng,
-          currentProduct.latitude,
-          currentProduct.longitude
-        );
-        setDistanceKm(parseFloat(d.toFixed(2)));
-      }
-    }
-  }, true);
-
-  const handleUseMyLocation = () => {
-    if (!navigator.geolocation) {
-      alert("Geolocation is not supported by your browser");
-      return;
-    }
-    navigator.geolocation.getCurrentPosition((position) => {
-      const { latitude, longitude } = position.coords;
-      setUserLocation({ lat: latitude, lng: longitude });
-      if (currentProduct?.latitude && currentProduct?.longitude) {
-        const d = calculateDistance(
-          latitude,
-          longitude,
-          currentProduct.latitude,
-          currentProduct.longitude
-        );
-        setDistanceKm(parseFloat(d.toFixed(2)));
-      }
-    });
-  };
+ 
 
   useEffect(() => {
     if (id) dispatch(fetchProductById(id));
@@ -149,8 +76,7 @@ const ProductDetail: React.FC = () => {
     ...(currentProduct.images || []),
   ].filter(Boolean) as string[];
 
-  const hasLocation =
-    currentProduct.latitude != null && currentProduct.longitude != null;
+ 
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-slate-900 py-8 px-4">
@@ -258,97 +184,9 @@ const ProductDetail: React.FC = () => {
                     </p>
                   )}
                 </div>
-                <div className="gap-8 pb-6">
-                  {hasLocation && (
-                    <div className="mb-8 h-80 w-full rounded-xl overflow-hidden shadow-lg">
-                      <div className="mb-5">
-                        <span className="text-gray-300 font-semibold text-xl">
-                          Shop's Physical Location
-                        </span>
-                      </div>
-                      <MapContainer
-                        center={[
-                          currentProduct.latitude!,
-                          currentProduct.longitude!,
-                        ]}
-                        zoom={16}
-                        scrollWheelZoom={true}
-                        className="h-full w-full"
-                      >
-                        <TileLayer
-                          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                          attribution="&copy; OpenStreetMap contributors"
-                        />
+               
 
-                        {/* Shop marker */}
-                        <Marker
-                          position={[
-                            currentProduct.latitude!,
-                            currentProduct.longitude!,
-                          ]}
-                        >
-                          <Popup>{currentProduct.title}</Popup>
-                        </Marker>
-
-                        {/* User marker */}
-                        {userLocation && (
-                          <Marker
-                            position={[userLocation.lat, userLocation.lng]}
-                          >
-                            <Popup>Your location</Popup>
-                          </Marker>
-                        )}
-
-                        {/* Route line */}
-                        {userLocation && (
-                          <RouteControl
-                            from={userLocation}
-                            to={{
-                              lat: currentProduct.latitude!,
-                              lng: currentProduct.longitude!,
-                            }}
-                          />
-                        )}
-                      </MapContainer>
-                    </div>
-                  )}
-                </div>
-
-                {hasLocation && (
-                  <div className="mb-6">
-                    <h2 className="text-lg font-semibold mb-2">
-                      Get Distance & Directions
-                    </h2>
-
-                    {/* Use Current Location */}
-                    <button
-                      onClick={handleUseMyLocation}
-                      className="bg-indigo-600 text-white px-4 py-2 rounded-lg mr-2 hover:bg-indigo-700 transition"
-                    >
-                      Use My Current Location
-                    </button>
-
-                    {/* Or Enter Custom Location */}
-                    <div className="mt-4 flex gap-2">
-                      <input
-                        type="text"
-                        ref={inputRef}
-                        value={customLocation}
-                        onChange={(e) => setCustomLocation(e.target.value)}
-                        placeholder="Enter a starting location"
-                        className="flex-1 px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-200 bg-white dark:bg-gray-800"
-                      />
-                    </div>
-
-                    {/* Distance Display */}
-                    {distanceKm !== null && (
-                      <p className="mt-2 text-gray-700 dark:text-gray-300">
-                        Distance from your location:{" "}
-                        <strong>{distanceKm} km</strong>
-                      </p>
-                    )}
-                  </div>
-                )}
+                
 
                 {/* Contact / Owner */}
                 {!isOwner && (

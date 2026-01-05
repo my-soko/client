@@ -8,7 +8,7 @@ import {
 import type { AppDispatch, RootState } from "../../redux/store";
 import { categories } from "../../util/Category";
 import { warrantyOptions } from "../../util/Warranty";
-import { usePlacesAutocomplete } from "../../hooks/usePlacesAutocomplete";
+import { fetchMyShops } from "../../redux/reducers/shopSlice";
 
 interface FormData {
   title: string;
@@ -23,16 +23,12 @@ interface FormData {
   status: "onsale" | "sold";
   quickSale: boolean;
   productType: "INDIVIDUAL" | "SHOP";
-  shopName: string;
-  shopAddress: string;
-  latitude?: number | null;
-  longitude?: number | null;
+  shopId?: string;
 }
 
 const MAX_IMAGES = 5;
 
 const UpdateProduct: React.FC = () => {
-  const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
 
@@ -41,6 +37,8 @@ const UpdateProduct: React.FC = () => {
     loading,
     error,
   } = useSelector((state: RootState) => state.product);
+
+  const dispatch = useDispatch<AppDispatch>();
 
   const [formData, setFormData] = useState<FormData>({
     title: "",
@@ -55,10 +53,7 @@ const UpdateProduct: React.FC = () => {
     status: "onsale",
     quickSale: false,
     productType: "INDIVIDUAL",
-    shopName: "",
-    shopAddress: "",
-    latitude: null,
-    longitude: null,
+    shopId: "",
   });
 
   const [newImages, setNewImages] = useState<File[]>([]);
@@ -67,10 +62,6 @@ const UpdateProduct: React.FC = () => {
   const [existingGallery, setExistingGallery] = useState<string[]>([]);
   const [removeImages, setRemoveImages] = useState<string[]>([]);
   const [imageError, setImageError] = useState<string>("");
-  const [locationError, setLocationError] = useState("");
-  const [locationMode, setLocationMode] = useState<
-    "ADDRESS" | "CURRENT" | null
-  >(null);
 
   // Calculate current total images that will remain after update
   const filteredGallery = existingGallery.filter(
@@ -95,60 +86,11 @@ const UpdateProduct: React.FC = () => {
 
   const subItems = selectedCategory?.subItems || [];
 
-  // Handle selecting address from Google Places
-  const handlePlaceSelect = (place: google.maps.places.PlaceResult) => {
-    const address = place.formatted_address || "";
-    const lat = place.geometry?.location?.lat();
-    const lng = place.geometry?.location?.lng();
-    if (!lat || !lng) return;
-
-    setFormData((prev) => ({
-      ...prev,
-      shopAddress: address,
-      latitude: lat,
-      longitude: lng,
-    }));
-    setLocationMode("ADDRESS");
-    setLocationError("");
-  };
-
-  const addressInputRef = usePlacesAutocomplete(
-    handlePlaceSelect,
-    formData.productType === "SHOP"
-  );
-
-  // Handle current geolocation
-  const recordCurrentLocation = () => {
-    if (!navigator.geolocation) {
-      setLocationError("Geolocation not supported.");
-      return;
-    }
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setFormData((prev) => ({
-          ...prev,
-          shopAddress: "",
-          latitude: pos.coords.latitude,
-          longitude: pos.coords.longitude,
-        }));
-        setLocationMode("CURRENT");
-        setLocationError("");
-      },
-      () => setLocationError("Unable to retrieve location."),
-      { enableHighAccuracy: true }
-    );
-  };
+  const { myShops } = useSelector((state: RootState) => state.shop);
 
   useEffect(() => {
-    if (formData.productType === "INDIVIDUAL") {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setFormData((prev) => ({
-        ...prev,
-        shopAddress: "",
-      }));
-      setLocationError("");
-    }
-  }, [formData.productType]);
+    dispatch(fetchMyShops());
+  }, [dispatch]);
 
   useEffect(() => {
     if (id && !product) dispatch(fetchProductById(id));
@@ -175,8 +117,6 @@ const UpdateProduct: React.FC = () => {
           : "onsale",
       quickSale: product.quickSale || false,
       productType: product.productType || "INDIVIDUAL",
-      shopAddress: product.shopAddress || "",
-      shopName: product.shopName || "",
     });
 
     setExistingCover(product.imageUrl || "");
@@ -223,15 +163,15 @@ const UpdateProduct: React.FC = () => {
     e.preventDefault();
     if (!id) return;
 
-   if (totalImagesAfterUpdate > MAX_IMAGES) {
-  setImageError(`Maximum of ${MAX_IMAGES} images allowed.`);
-  return;
-}
+    if (totalImagesAfterUpdate > MAX_IMAGES) {
+      setImageError(`Maximum of ${MAX_IMAGES} images allowed.`);
+      return;
+    }
 
-if (totalImagesAfterUpdate === 0) {
-  setImageError("Product must have at least one image.");
-  return;
-}
+    if (totalImagesAfterUpdate === 0) {
+      setImageError("Product must have at least one image.");
+      return;
+    }
 
     const submitData = new FormData();
     Object.entries(formData).forEach(([key, value]) => {
@@ -242,16 +182,6 @@ if (totalImagesAfterUpdate === 0) {
       submitData.append("removeImages", JSON.stringify(removeImages));
 
     newImages.forEach((file) => submitData.append("images", file));
-    if (
-      formData.productType === "SHOP" &&
-      !formData.shopAddress.trim() &&
-      !formData.shopName
-    ) {
-      setLocationError(
-        "Please provide either a shop address or pin the shop location."
-      );
-      return;
-    }
 
     const result = await dispatch(updateProduct({ id, formData: submitData }));
     if (updateProduct.fulfilled.match(result)) navigate("/");
@@ -515,61 +445,37 @@ if (totalImagesAfterUpdate === 0) {
           </select>
 
           <p className="text-xs text-gray-500">
-            {formData.productType === "SHOP"
-              ? "Shop products must have a physical location"
-              : "Individual sellers do not require a location"}
+            {formData.productType === "SHOP" && (
+              <div className="mt-4">
+                <label className="block font-medium mb-2">Select Shop</label>
+                <select
+                  value={formData.shopId || ""}
+                  onChange={(e) => handleChange("shopId", e.target.value)}
+                  required
+                  className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-3 focus:ring-2 focus:ring-indigo-500"
+                >
+                  <option className="dark:bg-slate-900" value="">
+                    Select a Shop
+                  </option>
+                  {myShops.map((shop) => (
+                    <option
+                      key={shop.id}
+                      value={shop.id}
+                      className="dark:bg-slate-900"
+                    >
+                      {shop.name}
+                    </option>
+                  ))}
+                </select>
+                {myShops.length === 0 && (
+                  <p className="text-sm text-red-500 mt-2">
+                    You don't have any shops yet. Create a shop first.
+                  </p>
+                )}
+              </div>
+            )}
           </p>
         </div>
-
-        {formData.productType === "SHOP" && (
-          <div className="space-y-4 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-            <h3 className="font-semibold text-gray-700 dark:text-gray-300">
-              Shop Location
-            </h3>
-
-            <input
-              type="text"
-              placeholder="Shop Name"
-              value={formData.shopName}
-              onChange={(e) => handleChange("shopName", e.target.value)}
-              required
-              className="w-full border rounded-lg px-4 py-3 focus:ring-2 focus:ring-indigo-500"
-            />
-
-            {/* Google Address Input */}
-            <input
-              ref={addressInputRef}
-              type="text"
-              placeholder="Search shop address using Google"
-              value={formData.shopAddress}
-              onChange={(e) => handleChange("shopAddress", e.target.value)}
-              disabled={locationMode === "CURRENT"}
-              className="w-full border rounded-lg px-4 py-3 disabled:bg-gray-100 dark:disabled:bg-gray-700"
-            />
-
-            <div className="text-center text-sm text-gray-500">OR</div>
-
-            {/* Use current location */}
-            <button
-              type="button"
-              onClick={recordCurrentLocation}
-              disabled={locationMode === "ADDRESS"}
-              className="w-full py-3 rounded-lg border border-indigo-600 text-indigo-600 font-semibold hover:bg-indigo-50 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              📍 Use My Current Location
-            </button>
-
-            {locationError && (
-              <p className="text-sm text-red-600">{locationError}</p>
-            )}
-
-            {formData.latitude !== null && formData.longitude !== null && (
-              <p className="text-sm text-green-600">
-                📍 Location pinned successfully
-              </p>
-            )}
-          </div>
-        )}
 
         {/* Condition & Warranty */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

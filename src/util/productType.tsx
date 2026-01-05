@@ -1,6 +1,8 @@
+
 export type ProductType = "INDIVIDUAL" | "SHOP";
 
 export type ProductFormData = {
+  id?: string;
   title: string;
   description: string;
   price: string;
@@ -15,8 +17,5 @@ export type ProductFormData = {
   quickSale: boolean;
   whatsappNumber: string;
   productType: "INDIVIDUAL" | "SHOP";
-  shopName: string;
-  shopAddress: string;
-  latitude: number | null;
-  longitude: number | null;
+  shopId?: string;
 };

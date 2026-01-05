@@ -16,6 +16,7 @@ import { Heart } from "lucide-react";
 import Header from "../Header/Header";
 import Footer from "../Footer/Footer";
 import { formatDate } from "../../util/FormDate";
+import { fetchMyShops } from "../../redux/reducers/shopSlice";
 
 const AllProducts: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -28,6 +29,7 @@ const AllProducts: React.FC = () => {
     loading,
     error,
   } = useSelector((state: RootState) => state.product);
+  const { myShops } = useSelector((state: RootState) => state.shop);
 
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
 
@@ -45,6 +47,7 @@ const AllProducts: React.FC = () => {
 
   useEffect(() => {
     dispatch(fetchProducts());
+    dispatch(fetchMyShops());
   }, [dispatch]);
 
   if (loading)
@@ -124,6 +127,10 @@ const AllProducts: React.FC = () => {
               {/* HORIZONTAL SCROLLER */}
               <div className="flex gap-6 overflow-x-auto pb-6 scrollbar-hide snap-x snap-mandatory">
                 {categoryProducts.slice(0, 4).map((product) => {
+                  const productShop = myShops.find(
+                    (shop) => shop.ownerId === product.sellerId
+                  );
+
                   const isOwner = user?.id === product.sellerId;
                   const isFavourite = favourites.some(
                     (fav) => fav.productId === product.id
@@ -170,12 +177,26 @@ const AllProducts: React.FC = () => {
                             {product.description}
                           </p>
 
-                          {product.shopAddress && (
-                            <p className="mt-2 text-sm text-indigo-600 dark:text-indigo-400">
-                              <span className="text-gray-200">
-                                {product.productType} Located At 📍
-                              </span>{" "}
-                              {product.shopAddress}
+                          {productShop?.address && (
+                            <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                              <span className="font-semibold">Location:</span>{" "}
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  window.open(
+                                    `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+                                      productShop.address
+                                    )}`,
+                                    "_blank",
+                                    "noopener,noreferrer"
+                                  );
+                                }}
+                                className="underline hover:text-indigo-600 dark:hover:text-indigo-400 text-left"
+                              >
+                                {productShop.address}
+                              </button>
                             </p>
                           )}
 
