@@ -1,9 +1,8 @@
-import type { Key } from "react";
 
 export type ProductType = "INDIVIDUAL" | "SHOP";
 
 export type ProductFormData = {
-  id: Key | null | undefined;
+  id?: string;
   title: string;
   description: string;
   price: string;

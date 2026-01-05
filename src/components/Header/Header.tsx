@@ -248,13 +248,13 @@ const Header: React.FC = () => {
 
             {showShopMenu && (
               <div className="absolute right-0 mt-3 w-48 bg-white dark:bg-gray-800 shadow-xl rounded-lg overflow-hidden z-50">
-                <Link
+                {/* <Link
                   to="/shops-map"
                   onClick={() => setShowShopMenu(false)}
                   className="block px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700"
                 >
                   🗺️ All Shops Map
-                </Link>
+                </Link> */}
 
                 {user && (
                   <>

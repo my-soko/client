@@ -1,7 +1,6 @@
-// src/components/Map/RouteControl.tsx
 import { useEffect } from "react";
 import { useMap } from "react-leaflet";
-import L from  "leaflet";
+import L from "leaflet";
 import "leaflet-routing-machine";
 
 interface Props {
@@ -15,23 +14,34 @@ const RouteControl: React.FC<Props> = ({ from, to }) => {
   useEffect(() => {
     if (!from || !to) return;
 
-
-   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-   const routingControl = (L as any).Routing.control({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const routingControl = (L as any).Routing.control({
       waypoints: [
         L.latLng(from.lat, from.lng),
         L.latLng(to.lat, to.lng),
       ],
       routeWhileDragging: false,
       addWaypoints: false,
-      show: false, 
+      draggableWaypoints: false,
+      show: false,                    // ← THIS hides the instructions panel!
+      createMarker: () => null,       // No waypoint markers
+      showAlternatives: false,
+      fitSelectedRoutes: false,       // Don't auto-zoom to fit route
       lineOptions: {
-        styles: [{ color: "#e546e5ff", weight: 5 }],
+        styles: [{ color: "#e546e5", weight: 6, opacity: 0.8 }],
       },
+      // Optional: customize router if needed
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      router: new (L as any).Routing.osrmv1({
+        serviceUrl: "https://router.project-osrm.org/route/v1",
+      }),
     }).addTo(map);
 
+    // Cleanup on unmount or when selection changes
     return () => {
-      map.removeControl(routingControl);
+      if (map.hasLayer(routingControl)) {
+        map.removeControl(routingControl);
+      }
     };
   }, [from, to, map]);
 

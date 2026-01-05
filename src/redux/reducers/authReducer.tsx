@@ -4,9 +4,9 @@ import {
   createAsyncThunk,
   type PayloadAction,
 } from "@reduxjs/toolkit";
-import axios from "axios";
+import api from "../../util/api/axios";
 
-axios.defaults.withCredentials = true;
+api.defaults.withCredentials = true;
 
 const API_URL = "http://localhost:5000/auth";
 
@@ -40,7 +40,7 @@ export const registerUser = createAsyncThunk<
   { rejectValue: any }
 >("auth/register", async (data, { rejectWithValue }) => {
   try {
-    const res = await axios.post(`${API_URL}/register`, data);
+    const res = await api.post(`${API_URL}/register`, data);
     return res.data.user;
   } catch (err: any) {
     return rejectWithValue(err.response?.data || "Registration failed");
@@ -54,7 +54,7 @@ export const loginUser = createAsyncThunk<
   { rejectValue: any }
 >("auth/login", async (data, { rejectWithValue }) => {
   try {
-    const res = await axios.post(`${API_URL}/login`, data);
+    const res = await api.post(`${API_URL}/login`, data);
     return res.data.user;
   } catch (err: any) {
     return rejectWithValue(err.response?.data || "Login failed");
@@ -68,7 +68,7 @@ export const googleLogin = createAsyncThunk<
   { rejectValue: any }
 >("auth/googleLogin", async ({ token }, { rejectWithValue }) => {
   try {
-    const res = await axios.post(`${API_URL}/google-login`, { token });
+    const res = await api.post(`${API_URL}/google-login`, { token });
     return res.data.user;
   } catch (err: any) {
     return rejectWithValue(err.response?.data || "Google login failed");
@@ -82,7 +82,7 @@ export const forgotPassword = createAsyncThunk<
   { rejectValue: any }
 >("auth/forgotPassword", async (data, { rejectWithValue }) => {
   try {
-    const res = await axios.post(`${API_URL}/forgot-password`, data);
+    const res = await api.post(`${API_URL}/forgot-password`, data);
     return res.data;
   } catch (err: any) {
     return rejectWithValue(err.response?.data || "Failed to send reset link");
@@ -96,7 +96,7 @@ export const resetPassword = createAsyncThunk<
   { rejectValue: any }
 >("auth/resetPassword", async (data, { rejectWithValue }) => {
   try {
-    const res = await axios.post(`${API_URL}/reset-password`, data);
+    const res = await api.post(`${API_URL}/reset-password`, data);
     return res.data;
   } catch (err: any) {
     return rejectWithValue(err.response?.data || "Password reset failed");
@@ -108,7 +108,7 @@ export const fetchProfile = createAsyncThunk<User>(
   "auth/fetchProfile",
   async (_, { rejectWithValue }) => {
     try {
-      const res = await axios.get(`${API_URL}/profileInfo`, {
+      const res = await api.get(`${API_URL}/profileInfo`, {
         withCredentials: true,
       });
       const user = res.data.user;
@@ -134,7 +134,7 @@ export const updateUserProfile = createAsyncThunk<
   { whatsappNumber: string; profilePicture: string }
 >("auth/updateProfile", async (data, { rejectWithValue }) => {
   try {
-    const res = await axios.put(`${API_URL}/profile`, data);
+    const res = await api.put(`${API_URL}/profile`, data);
     return res.data.user;
   } catch (err: any) {
     return rejectWithValue(err.response?.data?.message || "Update failed");
@@ -143,7 +143,7 @@ export const updateUserProfile = createAsyncThunk<
 
 // LOGOUT
 export const logoutUser = createAsyncThunk("auth/logout", async () => {
-  await axios.post(`${API_URL}/logout`);
+  await api.post(`${API_URL}/logout`);
 });
 
 // ====================== SLICE ======================

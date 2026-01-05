@@ -84,35 +84,37 @@ const ShopMap: React.FC<Props> = ({ selectedCategory, userLocation }) => {
     setDistanceToShop(distances);
   }, [shops, userLocation]);
 
-  return (
-    <div className="h-[80vh] w-full rounded-xl overflow-hidden shadow-lg">
-      <MapContainer
-        center={userLocation || [-1.286389, 36.817223]}
-        zoom={12}
-        className="h-full w-full"
-      >
-        <TileLayer
-          attribution="© OpenStreetMap contributors"
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
+return (
+  <div className="h-[80vh] w-full rounded-xl overflow-hidden shadow-lg">
+    <MapContainer
+      center={userLocation || [-1.286389, 36.817223]}
+      zoom={12}
+      className="h-full w-full"
+    >
+      <TileLayer
+        attribution="© OpenStreetMap contributors"
+        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+      />
 
-        {shops.map((shop) => (
-          <Marker
-            key={shop.id}
-            position={[shop.latitude, shop.longitude]}
-            eventHandlers={{
-              click: () => {
-                setSelectedShop({
-                  lat: shop.latitude,
-                  lng: shop.longitude,
-                });
-              },
-            }}
-          >
-            <Tooltip direction="top" offset={[0, -10]} permanent>
-              {shop.name}
-            </Tooltip>
+      {/* All shop markers */}
+      {shops.map((shop) => (
+        <Marker
+          key={shop.id}
+          position={[shop.latitude, shop.longitude]}
+          eventHandlers={{
+            click: () => {
+              setSelectedShop({
+                lat: shop.latitude,
+                lng: shop.longitude,
+              });
+            },
+          }}
+        >
+          <Tooltip direction="top" offset={[0, -10]} permanent>
+            {shop.name}
+          </Tooltip>
 
+        
             <Popup>
               <div className="space-y-1">
                 <h3 className="font-bold text-lg">{shop.name}</h3>
@@ -171,21 +173,23 @@ const ShopMap: React.FC<Props> = ({ selectedCategory, userLocation }) => {
                 </p>
               </div>
             </Popup>
+        </Marker>
+      ))}
 
-            {userLocation && selectedShop && (
-              <RouteControl from={userLocation} to={selectedShop} />
-            )}
-          </Marker>
-        ))}
+      {/* User's location marker */}
+      {userLocation && (
+        <Marker position={[userLocation.lat, userLocation.lng]}>
+          <Popup>Your location</Popup>
+        </Marker>
+      )}
 
-        {userLocation && (
-          <Marker position={[userLocation.lat, userLocation.lng]}>
-            <Popup>Your location</Popup>
-          </Marker>
-        )}
-      </MapContainer>
-    </div>
-  );
+      {/* SINGLE RouteControl - only when a shop is selected */}
+      {userLocation && selectedShop && (
+        <RouteControl from={userLocation} to={selectedShop} />
+      )}
+    </MapContainer>
+  </div>
+);
 };
 
 export default ShopMap;

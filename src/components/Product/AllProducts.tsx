@@ -180,16 +180,23 @@ const AllProducts: React.FC = () => {
                           {productShop?.address && (
                             <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
                               <span className="font-semibold">Location:</span>{" "}
-                              <a
-                                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-                                  productShop.address
-                                )}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="underline hover:text-indigo-600 dark:hover:text-indigo-400"
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  window.open(
+                                    `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+                                      productShop.address
+                                    )}`,
+                                    "_blank",
+                                    "noopener,noreferrer"
+                                  );
+                                }}
+                                className="underline hover:text-indigo-600 dark:hover:text-indigo-400 text-left"
                               >
                                 {productShop.address}
-                              </a>
+                              </button>
                             </p>
                           )}
 
