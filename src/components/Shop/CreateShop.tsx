@@ -23,20 +23,36 @@ const CreateShop = () => {
     website: "",
   });
 
-  const [documents, setDocuments] = useState<File[]>([]);
-  const [locationMode, setLocationMode] = useState<"ADDRESS" | "CURRENT" | null>(null);
+ const [documents, setDocuments] = useState<File[]>([]);
+const [previews, setPreviews] = useState<string[]>([]);
+  const [locationMode, setLocationMode] = useState<
+    "ADDRESS" | "CURRENT" | null
+  >(null);
   const [locationError, setLocationError] = useState("");
 
   const navigate = useNavigate();
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
   // Handle file uploads
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) setDocuments(Array.from(e.target.files));
-  };
+ const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  if (!e.target.files) return;
+  const newFiles = Array.from(e.target.files);
+
+  // Append new files to existing
+  setDocuments((prev) => [...prev, ...newFiles]);
+
+  // Generate previews for image files
+  const newPreviews = newFiles.map((file) =>
+    file.type.startsWith("image/") ? URL.createObjectURL(file) : ""
+  );
+
+  setPreviews((prev) => [...prev, ...newPreviews]);
+};
 
   // Google Places Autocomplete
   const handlePlaceSelect = (place: google.maps.places.PlaceResult) => {
@@ -45,13 +61,12 @@ const CreateShop = () => {
       return;
     }
 
-   setForm((prev) => ({
-  ...prev,
-  address: place.formatted_address || "",
-  latitude: place.geometry!.location!.lat(),
-  longitude: place.geometry!.location!.lng(),
-}));
-
+    setForm((prev) => ({
+      ...prev,
+      address: place.formatted_address || "",
+      latitude: place.geometry!.location!.lat(),
+      longitude: place.geometry!.location!.lng(),
+    }));
 
     setLocationMode("ADDRESS");
     setLocationError("");
@@ -83,19 +98,24 @@ const CreateShop = () => {
   };
 
   // Submit form
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const data = new FormData();
+ const handleSubmit = (e: React.FormEvent) => {
+  e.preventDefault();
 
-    Object.entries(form).forEach(([key, value]) => {
-      if (value) data.append(key, value.toString());
-    });
+  if (documents.length < 2) {
+    alert("Please upload at least 2 documents: Business Registration and KRA.");
+    return;
+  }
 
-    documents.forEach((file) => data.append("documents", file));
+  const data = new FormData();
+  Object.entries(form).forEach(([key, value]) => {
+    if (value) data.append(key, value.toString());
+  });
+  documents.forEach((file) => data.append("documents", file));
 
-    dispatch(createShop(data));
-    navigate("/")
-  };
+  dispatch(createShop(data));
+  navigate("/");
+};
+
 
   return (
     <div className="max-w-3xl mx-auto p-6 bg-gray-900 rounded-xl shadow-lg">
@@ -107,7 +127,10 @@ const CreateShop = () => {
         </p>
       )}
 
-      <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <form
+        onSubmit={handleSubmit}
+        className="grid grid-cols-1 md:grid-cols-2 gap-4"
+      >
         <input
           name="name"
           placeholder="Shop Name"
@@ -187,10 +210,13 @@ const CreateShop = () => {
           >
             📍 Use My Current Location
           </button>
-          {locationError && <p className="text-red-500 text-sm">{locationError}</p>}
+          {locationError && (
+            <p className="text-red-500 text-sm">{locationError}</p>
+          )}
           {form.latitude && form.longitude && (
             <p className="text-green-500 text-sm">
-              📍 Location pinned successfully (Lat: {form.latitude}, Lng: {form.longitude})
+              📍 Location pinned successfully (Lat: {form.latitude}, Lng:{" "}
+              {form.longitude})
             </p>
           )}
         </div>
@@ -200,7 +226,56 @@ const CreateShop = () => {
           multiple
           onChange={handleFileChange}
           className="md:col-span-2 text-white"
+          accept=".pdf,.doc,.docx"
         />
+        <p className="text-gray-400 text-sm md:col-span-2">
+          Upload **Business Registration** and **KRA Document** (PDF or Word)
+        </p>
+
+       {/* Document Preview */}
+{documents.length > 0 && (
+  <div className="md:col-span-2 mt-2">
+    <h3 className="text-white font-medium mb-1">Selected Documents:</h3>
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+      {documents.map((file, index) => (
+        <div
+          key={index}
+          className="flex items-center gap-2 bg-gray-800 p-2 rounded"
+        >
+          {file.type.startsWith("image/") && previews[index] ? (
+            <img
+              src={previews[index]}
+              alt={file.name}
+              className="w-16 h-16 object-cover rounded border border-gray-600"
+            />
+          ) : (
+            <div className="w-16 h-16 flex items-center justify-center bg-gray-700 text-gray-300 rounded border border-gray-600 text-xs text-center p-1">
+              {file.name.split(".").pop()?.toUpperCase() || "FILE"}
+            </div>
+          )}
+          <div className="flex-1">
+            <p className="text-gray-200 text-sm">{file.name}</p>
+            <p className="text-gray-400 text-xs">
+              {(file.size / 1024).toFixed(1)} KB
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              // Remove file and its preview
+              setDocuments((prev) => prev.filter((_, i) => i !== index));
+              setPreviews((prev) => prev.filter((_, i) => i !== index));
+            }}
+            className="text-red-500 hover:underline text-sm"
+          >
+            Remove
+          </button>
+        </div>
+      ))}
+    </div>
+  </div>
+)}
+
 
         <button
           type="submit"
