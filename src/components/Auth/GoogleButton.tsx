@@ -26,7 +26,6 @@ const GoogleButton = ({ onSuccess }: GoogleBtnProps) => {
           const res = await dispatch(
             googleLogin({ token: response.credential })
           );
-          console.log("google res:", res);
 
           if (googleLogin.fulfilled.match(res)) {
             onSuccess?.();

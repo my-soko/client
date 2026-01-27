@@ -11,9 +11,9 @@ import UpdateProfile from "./components/Profile/UpdateProfile";
 import VerifyEmail from "./components/Auth/VerifyEmail";
 import ForgotPassword from "./components/Auth/ForgotPassword";
 import ResetPassword from "./components/Auth/ResetPassword";
-import type { AppDispatch } from "./redux/store";
+import type { AppDispatch} from "./redux/store";
 import { useDispatch } from "react-redux";
-import { fetchProfile } from "./redux/reducers/authReducer";
+import {  fetchProfile, logoutUser } from "./redux/reducers/authReducer";
 import { useEffect } from "react";
 import FavouritesPage from "./components/Favourite/FavouritesPage";
 import CategoryProducts from "./components/Product/CategoryProducts";
@@ -22,14 +22,26 @@ import CreateShop from "./components/Shop/CreateShop";
 import MyShops from "./components/Shop/MyShops";
 import UpdateShop from "./components/Shop/UpdateShop";
 import ShopDetail from "./components/Shop/ShopDetail";
+import ProductShopMapPage from "./components/Product/ProductShopMapPage";
 
 const App = () => {
-  // const { user } = useSelector((state: RootState) => state.auth);
   const dispatch = useDispatch<AppDispatch>();
 
   useEffect(() => {
     dispatch(fetchProfile());
   }, [dispatch]);
+
+  useEffect(() => {
+    const handleSessionExpired = () => {
+      dispatch(logoutUser());
+    };
+    window.addEventListener("auth:logout", handleSessionExpired);
+
+    return () => {
+      window.removeEventListener("auth:logout", handleSessionExpired);
+    };
+  }, [dispatch]);
+
   return (
     <div>
       <Routes>
@@ -47,6 +59,7 @@ const App = () => {
         <Route path="/shops-map" element={<ShopsMapPage />} />
         <Route path="/shops-map/:category" element={<ShopsMapPage />} />
         <Route path="/shops-map/product/:id" element={<ProductDetail />} />
+        <Route path="/product-map/:id" element={<ProductShopMapPage />} />
         <Route
           path="/shops/create"
           element={

@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { createSlice, createAsyncThunk, type PayloadAction } from "@reduxjs/toolkit";
-import axios from "axios";
+import api from "../../api/axios";
 
 interface Review {
   id: string;
@@ -33,7 +33,7 @@ export const fetchReviews = createAsyncThunk(
   "reviews/fetchReviews",
   async (productId: string, { rejectWithValue }) => {
     try {
-      const res = await axios.get(`${API_URL}/product/${productId}`);
+      const res = await api.get(`${API_URL}/product/${productId}`);
       return res.data.reviews;
     } catch (err: any) {
       return rejectWithValue(err.response?.data?.message || "Error fetching reviews");
@@ -46,7 +46,7 @@ export const fetchUserReview = createAsyncThunk(
   "reviews/fetchUserReview",
   async (productId: string, { rejectWithValue }) => {
     try {
-      const res = await axios.get(`${API_URL}/product/${productId}/user`);
+      const res = await api.get(`${API_URL}/product/${productId}/user`);
       return res.data.review;
     } catch (err: any) {
       return rejectWithValue(err.response?.data?.message || "Error fetching user review");
@@ -63,7 +63,7 @@ export const createReview = createAsyncThunk(
     { rejectWithValue }
   ) => {
     try {
-      const res = await axios.post(`${API_URL}`, { productId, rating, comment });
+      const res = await api.post(`${API_URL}`, { productId, rating, comment });
       return res.data.review;
     } catch (err: any) {
       return rejectWithValue(err.response.data.message || "Error submitting review");

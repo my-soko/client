@@ -1,6 +1,7 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import axios from "axios";
 import type { ProductType } from "../../util/productType";
+import api from "../../api/axios";
+import type { Shop } from "../../types/Shops";
 
 const API_URL = "http://localhost:5000/api/product";
 
@@ -31,6 +32,8 @@ export interface Product {
   stockTotal: number;
   seller: Seller;
   productType: ProductType;
+  shop: Shop | null;
+  shopId?: string;
   averageRating?: number;
   totalReviews?: number;
   whatsappLink?: string;
@@ -85,7 +88,7 @@ export const fetchProducts = createAsyncThunk<
   { rejectValue: ErrorResponse } // reject value type
 >("product/fetchProducts", async (_, { rejectWithValue }) => {
   try {
-    const response = await axios.get<Product[]>(API_URL, {
+    const response = await api.get<Product[]>(API_URL, {
       withCredentials: true,
     });
     return response.data;
@@ -101,7 +104,7 @@ export const createProduct = createAsyncThunk<
   { rejectValue: ErrorResponse }
 >("product/createProduct", async (formData, { rejectWithValue }) => {
   try {
-    const response = await axios.post(API_URL, formData, {
+    const response = await api.post(API_URL, formData, {
       withCredentials: true,
       headers: { "Content-Type": "multipart/form-data" },
     });
@@ -119,7 +122,7 @@ export const updateProduct = createAsyncThunk<
   { rejectValue: ErrorResponse }
 >("product/updateProduct", async ({ id, formData }, { rejectWithValue }) => {
   try {
-    const response = await axios.put(`${API_URL}/${id}`, formData, {
+    const response = await api.put(`${API_URL}/${id}`, formData, {
       withCredentials: true,
       headers: { "Content-Type": "multipart/form-data" },
     });
@@ -136,7 +139,7 @@ export const fetchProductById = createAsyncThunk<
   { rejectValue: ErrorResponse }
 >("product/fetchProductById", async (id, { rejectWithValue }) => {
   try {
-    const response = await axios.get<Product>(`${API_URL}/${id}`, {
+    const response = await api.get<Product>(`${API_URL}/${id}`, {
       withCredentials: true,
     });
     return response.data;
@@ -152,7 +155,7 @@ export const deleteProduct = createAsyncThunk<
   { rejectValue: ErrorResponse }
 >("product/deleteProduct", async (id, { rejectWithValue }) => {
   try {
-    const response = await axios.delete(`${API_URL}/${id}`, {
+    const response = await api.delete(`${API_URL}/${id}`, {
       withCredentials: true,
     });
     return response.data;

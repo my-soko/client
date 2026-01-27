@@ -3,8 +3,8 @@ import {
   createAsyncThunk,
   type PayloadAction,
 } from "@reduxjs/toolkit";
-import axios from "axios";
 import type { ProductPayload } from "../../types/product";
+import api from "../../api/axios";
 
 
 // Response from /initiate endpoint
@@ -51,7 +51,7 @@ export const initiatePayment = createAsyncThunk<
   "payment/initiate",
   async ({ userId, phone, productData }, { rejectWithValue }) => {
     try {
-      const response = await axios.post<PaymentResponse>(`${API_URL}/initiate`, {
+      const response = await api.post<PaymentResponse>(`${API_URL}/initiate`, {
         userId,
         phone,
         productData,

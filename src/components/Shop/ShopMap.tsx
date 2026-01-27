@@ -131,23 +131,6 @@ return (
                     <span className="font-semibold">Email:</span> {shop.email}
                   </p>
                 )}
-                {shop.website && (
-                  <p className="text-xs">
-                    <span className="font-semibold">Website:</span>{" "}
-                    <a
-                      href={
-                        shop.website.startsWith("http")
-                          ? shop.website
-                          : `https://${shop.website}`
-                      }
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-indigo-600 hover:underline"
-                    >
-                      {shop.website}
-                    </a>
-                  </p>
-                )}
 
                 {(shop.products || []).length > 0 && (
                   <div className="mt-1">

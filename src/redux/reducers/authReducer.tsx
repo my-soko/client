@@ -4,7 +4,7 @@ import {
   createAsyncThunk,
   type PayloadAction,
 } from "@reduxjs/toolkit";
-import api from "../../util/api/axios";
+import api from "../../api/axios";
 
 api.defaults.withCredentials = true;
 
@@ -23,6 +23,7 @@ interface AuthState {
   user: User | null;
   loading: boolean;
   error: string | null;
+  initialized: boolean;
   isAuthenticated: boolean;
 }
 
@@ -31,6 +32,7 @@ const initialState: AuthState = {
   loading: true,
   error: null,
   isAuthenticated: false,
+  initialized: false,
 };
 
 // REGISTER
@@ -151,7 +153,13 @@ export const logoutUser = createAsyncThunk("auth/logout", async () => {
 const authSlice = createSlice({
   name: "auth",
   initialState,
-  reducers: {},
+  reducers: {
+    logout: (state) => {
+      state.user = null;
+      state.isAuthenticated = false;
+      state.error = null;
+    },
+  },
   extraReducers: (builder) => {
     builder
       // REGISTER
@@ -194,6 +202,7 @@ const authSlice = createSlice({
           image: action.payload.profilePicture || action.payload.picture,
         };
         state.isAuthenticated = true;
+        state.initialized = true;
       })
 
       // FORGOT PASSWORD
@@ -220,19 +229,21 @@ const authSlice = createSlice({
         state.error = action.payload?.message;
       })
 
-      // FETCH PROFILE
-      .addCase(fetchProfile.fulfilled, (state, action: PayloadAction<User>) => {
+      .addCase(fetchProfile.pending, (state) => {
+        state.loading = true;
+      })
+
+      .addCase(fetchProfile.fulfilled, (state, action) => {
         state.user = action.payload;
         state.isAuthenticated = true;
         state.loading = false;
-      })
-      .addCase(fetchProfile.rejected, (state) => {
-        state.user = null;
-        state.isAuthenticated = false;
-        state.loading = false;
+        state.initialized = true;
       })
 
-      // UPDATE PROFILE
+      .addCase(fetchProfile.rejected, (state) => {
+        state.loading = false;
+        state.initialized = true;
+      })
       .addCase(
         updateUserProfile.fulfilled,
         (state, action: PayloadAction<User>) => {
@@ -248,4 +259,5 @@ const authSlice = createSlice({
   },
 });
 
+export const { logout } = authSlice.actions;
 export default authSlice.reducer;

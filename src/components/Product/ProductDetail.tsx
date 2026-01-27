@@ -6,8 +6,6 @@ import type { AppDispatch, RootState } from "../../redux/store";
 import ProductReviews from "../Review/ProductReviews";
 import { formatDate } from "../../util/FormDate";
 
-
-
 const ProductDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const dispatch = useDispatch<AppDispatch>();
@@ -19,7 +17,6 @@ const ProductDetail: React.FC = () => {
   const { user } = useSelector((state: RootState) => state.auth);
 
   const [mainImage, setMainImage] = useState<string | null>(null);
- 
 
   useEffect(() => {
     if (id) dispatch(fetchProductById(id));
@@ -76,8 +73,6 @@ const ProductDetail: React.FC = () => {
     ...(currentProduct.images || []),
   ].filter(Boolean) as string[];
 
- 
-
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-slate-900 py-8 px-4">
       <div className="max-w-6xl mx-auto">
@@ -127,18 +122,31 @@ const ProductDetail: React.FC = () => {
             </div>
             <div className="flex flex-col justify-between">
               <div>
-                <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">
+                {/* Shop Name */}
+                {currentProduct.shop && (
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mb-2 sm:mb-3">
+                    Sold by:{" "}
+                    <span className="font-semibold text-indigo-600 dark:text-indigo-400">
+                      {currentProduct.shop.name} Shop
+                    </span>
+                  </p>
+                )}
+
+                {/* Product Title */}
+                <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-gray-900 dark:text-white mb-4 sm:mb-6 leading-tight">
                   {currentProduct.title}
                 </h1>
+
+                {/* Badges: Quick Sale, Condition, Warranty */}
                 <div className="flex flex-wrap gap-3 mb-6">
                   {currentProduct.quickSale && !isSold && (
-                    <span className="bg-red-600 text-white px-4 py-2 rounded-full text-sm font-bold animate-pulse">
+                    <span className="bg-red-600 text-white px-4 py-2 rounded-full text-sm font-bold animate-pulse shadow-md">
                       🔥 Quick Sale
                     </span>
                   )}
                   {currentProduct.condition && (
                     <span
-                      className={`px-4 py-2 rounded-full text-sm font-semibold shadow-sm ${
+                      className={`px-4 py-2 rounded-full text-sm font-semibold shadow-md ${
                         currentProduct.condition === "BRAND_NEW"
                           ? "bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400"
                           : currentProduct.condition === "SLIGHTLY_USED"
@@ -165,35 +173,47 @@ const ProductDetail: React.FC = () => {
                     </span>
                   )}
                 </div>
-                <p className="text-lg text-gray-700 dark:text-gray-300 leading-relaxed mb-8">
+
+                {/* Product Description */}
+                <p className="text-base sm:text-lg text-gray-700 dark:text-gray-300 leading-relaxed mb-8">
                   {currentProduct.description}
                 </p>
+
+                {/* Price */}
                 <div className="mb-8">
                   {currentProduct.discountPrice ? (
-                    <div>
-                      <p className="text-4xl font-bold text-red-600 dark:text-red-500">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                      <p className="text-3xl sm:text-4xl font-bold text-red-600 dark:text-red-500">
                         KSH {currentProduct.discountPrice.toLocaleString()}
                       </p>
-                      <p className="text-xl text-gray-500 dark:text-gray-400 line-through mt-2">
+                      <p className="text-xl sm:text-2xl text-gray-500 dark:text-gray-400 line-through">
                         KSH {currentProduct.price.toLocaleString()}
                       </p>
                     </div>
                   ) : (
-                    <p className="text-4xl font-bold text-indigo-600 dark:text-indigo-400">
+                    <p className="text-3xl sm:text-4xl font-bold text-indigo-600 dark:text-indigo-400">
                       KSH {currentProduct.price.toLocaleString()}
                     </p>
                   )}
                 </div>
-               
 
-                
+                {/* Map Link */}
+                {user && currentProduct.shop && (
+                  <Link
+                    to={`/product-map/${currentProduct.id}`}
+                    className="inline-flex items-center justify-center mt-4 w-full sm:w-auto py-3 px-6 rounded-xl
+bg-indigo-600 hover:bg-indigo-700 text-white font-semibold shadow-md transition-transform transform hover:scale-105"
+                  >
+                    📍 View {currentProduct.shop.name} on Map
+                  </Link>
+                )}
 
-                {/* Contact / Owner */}
+                {/* Contact / Owner Button */}
                 {!isOwner && (
                   <button
                     onClick={handleWhatsAppClick}
                     disabled={isSold}
-                    className={`w-full py-4 rounded-xl text-xl font-bold shadow-lg transition-all transform hover:scale-105 ${
+                    className={`w-full sm:w-auto mt-4 py-4 px-6 rounded-xl text-xl font-bold shadow-lg transition-all transform hover:scale-105 ${
                       isSold
                         ? "bg-gray-400 cursor-not-allowed text-gray-700"
                         : user
@@ -210,11 +230,12 @@ const ProductDetail: React.FC = () => {
                 )}
 
                 {isOwner && (
-                  <div className="bg-blue-100 dark:bg-blue-900/40 border border-blue-400 dark:border-blue-600 text-blue-800 dark:text-blue-300 p-4 rounded-xl text-center font-semibold">
+                  <div className="bg-blue-100 dark:bg-blue-900/40 border border-blue-400 dark:border-blue-600 text-blue-800 dark:text-blue-300 p-4 rounded-xl text-center font-semibold mt-4 shadow-sm">
                     This is your listing
                   </div>
                 )}
 
+                {/* Posted Date */}
                 {currentProduct.createdAt && (
                   <p className="text-sm mt-6 text-gray-500 dark:text-gray-400 italic">
                     Posted: {formatDate(currentProduct.createdAt)}

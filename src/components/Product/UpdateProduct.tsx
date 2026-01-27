@@ -28,6 +28,8 @@ interface FormData {
 
 const MAX_IMAGES = 5;
 
+const MAX_DESCRIPTION_LENGTH = 200;
+
 const UpdateProduct: React.FC = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
@@ -323,16 +325,36 @@ const UpdateProduct: React.FC = () => {
         ].map((field) => (
           <div key={field.key}>
             <label className="block font-medium mb-2">{field.label}</label>
+
             {field.type === "textarea" ? (
-              <textarea
-                value={formData[field.key as keyof FormData] as string}
-                onChange={(e) =>
-                  handleChange(field.key as keyof FormData, e.target.value)
-                }
-                rows={5}
-                required={field.required}
-                className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-3 focus:ring-2 focus:ring-indigo-500 resize-none"
-              />
+              <>
+                <textarea
+                  value={formData.description}
+                  onChange={(e) =>
+                    handleChange(
+                      "description",
+                      e.target.value.slice(0, MAX_DESCRIPTION_LENGTH)
+                    )
+                  }
+                  rows={5}
+                  required={field.required}
+                  maxLength={MAX_DESCRIPTION_LENGTH}
+                  className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-3
+                 focus:ring-2 focus:ring-indigo-500 resize-none"
+                />
+
+                <div className="flex justify-end text-xs mt-1">
+                  <span
+                    className={
+                      formData.description.length === MAX_DESCRIPTION_LENGTH
+                        ? "text-red-500"
+                        : "text-gray-500"
+                    }
+                  >
+                    {formData.description.length}/{MAX_DESCRIPTION_LENGTH}
+                  </span>
+                </div>
+              </>
             ) : (
               <input
                 type={field.type}
@@ -341,7 +363,8 @@ const UpdateProduct: React.FC = () => {
                   handleChange(field.key as keyof FormData, e.target.value)
                 }
                 required={field.required}
-                className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-3 focus:ring-2 focus:ring-indigo-500"
+                className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-3
+               focus:ring-2 focus:ring-indigo-500"
               />
             )}
           </div>

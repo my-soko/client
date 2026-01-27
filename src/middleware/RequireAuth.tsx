@@ -4,21 +4,24 @@ import type { RootState } from "../redux/store";
 import type { JSX } from "react";
 
 const RequireAuth = ({ children }: { children: JSX.Element }) => {
-  const { isAuthenticated, loading } = useSelector(
-    (state: RootState) => state.auth
-  );
-  if (loading) {
-    return (
-      <div className="h-screen flex items-center justify-center">
-        Restoring session…
-      </div>
-    );
-  }
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
-  }
+  const { isAuthenticated, initialized } = useSelector(
+  (state: RootState) => state.auth
+);
 
-  return children;
+if (!initialized) {
+  return (
+    <div className="h-screen flex items-center justify-center">
+      Restoring session…
+    </div>
+  );
+}
+
+if (!isAuthenticated) {
+  return <Navigate to="/login" replace />;
+}
+
+return children;
+
 };
 
 export default RequireAuth;

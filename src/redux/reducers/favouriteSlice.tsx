@@ -1,6 +1,6 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import axios from "axios";
 import type { RootState } from "../store";
+import api from "../../api/axios";
 
 const API_URL = "http://localhost:5000/api/favourite";
 
@@ -40,7 +40,7 @@ export const fetchFavourites = createAsyncThunk<
   { rejectValue: ErrorResponse }
 >("favourites/fetch", async (_, { rejectWithValue }) => {
   try {
-    const res = await axios.get(API_URL, { withCredentials: true });
+    const res = await api.get(API_URL, { withCredentials: true });
     return res.data.favourites as FavouriteWithProduct[];
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (err: any) {
@@ -54,7 +54,7 @@ export const addFavourite = createAsyncThunk<
   { rejectValue: ErrorResponse }
 >("favourites/add", async (productId, { rejectWithValue }) => {
   try {
-    const res = await axios.post(
+    const res = await api.post(
       API_URL,
       { productId },
       { withCredentials: true }
@@ -77,7 +77,7 @@ export const removeFavourite = createAsyncThunk<
   { rejectValue: ErrorResponse }
 >("favourites/remove", async (productId, { rejectWithValue }) => {
   try {
-    await axios.delete(`${API_URL}/${productId}`, {
+    await api.delete(`${API_URL}/${productId}`, {
       withCredentials: true,
     });
     return productId;
