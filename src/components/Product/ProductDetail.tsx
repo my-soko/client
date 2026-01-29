@@ -12,7 +12,7 @@ const ProductDetail: React.FC = () => {
   const navigate = useNavigate();
 
   const { currentProduct, loading, error } = useSelector(
-    (state: RootState) => state.product
+    (state: RootState) => state.product,
   );
   const { user } = useSelector((state: RootState) => state.auth);
 
@@ -56,7 +56,7 @@ const ProductDetail: React.FC = () => {
       ? `https://wa.me/${
           currentProduct.seller.whatsappNumber
         }?text=${encodeURIComponent(
-          `Hello ${currentProduct.seller.fullName}, my name is ${user.fullName}. I saw your product "${currentProduct.title}" on MySoko and I'm very interested! Is it still available?`
+          `Hello ${currentProduct.seller.fullName}, my name is ${user.fullName}. I saw your product "${currentProduct.title}" on MySoko and I'm very interested! Is it still available?`,
         )}`
       : null;
 
@@ -119,6 +119,33 @@ const ProductDetail: React.FC = () => {
                   ))}
                 </div>
               )}
+
+              {/* Colors */}
+              {currentProduct.colors && currentProduct.colors.length > 0 && (
+                <div className="mb-8">
+                  <h2 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                    Available Product Colors:
+                  </h2>
+                  <div className="flex flex-wrap gap-3">
+                    {currentProduct.colors.map(
+                      (color: { name: string; hex: string }, index: number) => (
+                        <div
+                          key={index}
+                          className="flex items-center gap-2 bg-gray-200 dark:bg-gray-800 px-6 py-1 rounded-full shadow-sm"
+                        >
+                          <span
+                            className="w-10 h-10 rounded-full border border-gray-300 dark:border-gray-600"
+                            style={{ backgroundColor: color.hex }}
+                          />
+                          <span className="text-sm text-gray-700 dark:text-gray-300">
+                            {color.name}
+                          </span>
+                        </div>
+                      ),
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
             <div className="flex flex-col justify-between">
               <div>
@@ -150,8 +177,8 @@ const ProductDetail: React.FC = () => {
                         currentProduct.condition === "BRAND_NEW"
                           ? "bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400"
                           : currentProduct.condition === "SLIGHTLY_USED"
-                          ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-400"
-                          : "bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-400"
+                            ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-400"
+                            : "bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-400"
                       }`}
                     >
                       {currentProduct.condition.replace("_", " ")}
@@ -204,7 +231,7 @@ const ProductDetail: React.FC = () => {
                     className="inline-flex items-center justify-center mt-4 w-full sm:w-auto py-3 px-6 rounded-xl
 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold shadow-md transition-transform transform hover:scale-105"
                   >
-                    📍 View {currentProduct.shop.name} on Map
+                    📍 View {currentProduct.shop.name} Location
                   </Link>
                 )}
 
@@ -217,15 +244,15 @@ bg-indigo-600 hover:bg-indigo-700 text-white font-semibold shadow-md transition-
                       isSold
                         ? "bg-gray-400 cursor-not-allowed text-gray-700"
                         : user
-                        ? "bg-green-600 hover:bg-green-700 text-white"
-                        : "bg-gray-300 dark:bg-gray-700 text-gray-600 dark:text-gray-400 cursor-not-allowed"
+                          ? "bg-green-600 hover:bg-green-700 text-white"
+                          : "bg-gray-300 dark:bg-gray-700 text-gray-600 dark:text-gray-400 cursor-not-allowed"
                     }`}
                   >
                     {isSold
                       ? "Product Sold"
                       : user
-                      ? "Contact Seller via WhatsApp"
-                      : "Login to Contact Seller"}
+                        ? "Contact Seller via WhatsApp"
+                        : "Login to Contact Seller"}
                   </button>
                 )}
 

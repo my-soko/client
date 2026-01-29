@@ -9,6 +9,7 @@ import type { AppDispatch, RootState } from "../../redux/store";
 import { categories } from "../../util/Category";
 import { warrantyOptions } from "../../util/Warranty";
 import { fetchMyShops } from "../../redux/reducers/shopSlice";
+import { AVAILABLE_COLORS, type ProductColor } from "../../util/productType";
 
 interface FormData {
   title: string;
@@ -20,6 +21,7 @@ interface FormData {
   subItem: string;
   warranty: string;
   condition: string;
+  colors: ProductColor[];
   status: "onsale" | "sold";
   quickSale: boolean;
   productType: "INDIVIDUAL" | "SHOP";
@@ -52,6 +54,7 @@ const UpdateProduct: React.FC = () => {
     subItem: "",
     warranty: "",
     condition: "BRAND_NEW",
+    colors: [],
     status: "onsale",
     quickSale: false,
     productType: "INDIVIDUAL",
@@ -67,7 +70,7 @@ const UpdateProduct: React.FC = () => {
 
   // Calculate current total images that will remain after update
   const filteredGallery = existingGallery.filter(
-    (img) => !removeImages.includes(img)
+    (img) => !removeImages.includes(img),
   );
   const remainingExistingImages = filteredGallery.length;
 
@@ -83,7 +86,7 @@ const UpdateProduct: React.FC = () => {
   ];
 
   const selectedCategory = categories.find(
-    (cat) => cat.name === formData.category
+    (cat) => cat.name === formData.category,
   );
 
   const subItems = selectedCategory?.subItems || [];
@@ -113,6 +116,7 @@ const UpdateProduct: React.FC = () => {
       subItem: product.subItem || "",
       warranty: product.warranty || "",
       condition: product.condition || "BRAND_NEW",
+      colors: product.colors ?? [],
       status:
         product.status === "onsale" || product.status === "sold"
           ? product.status
@@ -141,7 +145,7 @@ const UpdateProduct: React.FC = () => {
 
     if (selectedFiles.length > availableSlots) {
       setImageError(
-        `You can only add ${availableSlots} more image(s). Maximum total of ${MAX_IMAGES} images allowed.`
+        `You can only add ${availableSlots} more image(s). Maximum total of ${MAX_IMAGES} images allowed.`,
       );
       // Optionally allow partial addition up to limit
       const allowedFiles = selectedFiles.slice(0, availableSlots);
@@ -156,7 +160,7 @@ const UpdateProduct: React.FC = () => {
 
   const toggleRemoveImage = (url: string) => {
     setRemoveImages((prev) =>
-      prev.includes(url) ? prev.filter((u) => u !== url) : [...prev, url]
+      prev.includes(url) ? prev.filter((u) => u !== url) : [...prev, url],
     );
     setImageError(""); // Clear error when removing
   };
@@ -177,7 +181,11 @@ const UpdateProduct: React.FC = () => {
 
     const submitData = new FormData();
     Object.entries(formData).forEach(([key, value]) => {
-      submitData.append(key, value.toString());
+      if (key === "colors") {
+        submitData.append("colors", JSON.stringify(value));
+      } else {
+        submitData.append(key, value.toString());
+      }
     });
 
     if (removeImages.length)
@@ -301,6 +309,44 @@ const UpdateProduct: React.FC = () => {
           )}
         </div>
 
+        {/* Colors */}
+        <div>
+          <label className="block font-medium mb-3">Available Colors</label>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {AVAILABLE_COLORS.map((color) => {
+              const selected = formData.colors.some((c) => c.hex === color.hex);
+
+              return (
+                <button
+                  type="button"
+                  key={color.hex}
+                  onClick={() => {
+                    setFormData((prev) => ({
+                      ...prev,
+                      colors: selected
+                        ? prev.colors.filter((c) => c.hex !== color.hex)
+                        : [...prev.colors, color],
+                    }));
+                  }}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-lg border transition
+            ${
+              selected
+                ? "border-indigo-600 bg-indigo-50 dark:bg-indigo-900/30"
+                : "border-gray-300 dark:border-gray-600"
+            }`}
+                >
+                  <span
+                    className="w-5 h-5 rounded-full border"
+                    style={{ backgroundColor: color.hex }}
+                  />
+                  <span className="text-sm">{color.name}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
         {/* Rest of the form fields remain unchanged */}
         {[
           { label: "Title", key: "title", type: "text", required: true },
@@ -333,7 +379,7 @@ const UpdateProduct: React.FC = () => {
                   onChange={(e) =>
                     handleChange(
                       "description",
-                      e.target.value.slice(0, MAX_DESCRIPTION_LENGTH)
+                      e.target.value.slice(0, MAX_DESCRIPTION_LENGTH),
                     )
                   }
                   rows={5}
@@ -454,7 +500,7 @@ const UpdateProduct: React.FC = () => {
             onChange={(e) =>
               handleChange(
                 "productType",
-                e.target.value as "INDIVIDUAL" | "SHOP"
+                e.target.value as "INDIVIDUAL" | "SHOP",
               )
             }
             className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-3 focus:ring-2 focus:ring-indigo-500"

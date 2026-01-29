@@ -271,21 +271,6 @@ export const categories = [
     ],
   },
   {
-    name: "Smart Watches & Wearables",
-    brands: [
-      "Apple Watch",
-      "Samsung Galaxy Watch",
-      "Huawei Watch",
-      "Garmin",
-      "Fitbit",
-      "Xiaomi",
-      "Amazfit",
-      "Oraimo",
-      "Zeblaze",
-      "Other",
-    ],
-  },
-  {
     name: "Gaming & Consoles",
     brands: [
       "PlayStation",
@@ -305,6 +290,7 @@ export const categories = [
       "Toyota",
       "Honda",
       "Suzuki",
+      "Subaru",
       "Yamaha",
       "Bajaj",
       "TVS",
@@ -375,13 +361,7 @@ export const categories = [
   },
   {
     name: "Pet Supplies",
-    brands: [
-      "Pedigree",
-      "Whiskas",
-      "Royal Canin",
-      "Local Feeds",
-      "Other",
-    ],
+    brands: ["Pedigree", "Whiskas", "Royal Canin", "Local Feeds", "Other"],
   },
   {
     name: "Other",

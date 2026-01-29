@@ -29,7 +29,7 @@ const AllProducts: React.FC = () => {
     loading,
     error,
   } = useSelector((state: RootState) => state.product);
-  const { myShops } = useSelector((state: RootState) => state.shop);
+  // const { myShops } = useSelector((state: RootState) => state.shop);
 
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
 
@@ -67,7 +67,7 @@ const AllProducts: React.FC = () => {
   const sortedProducts = [...products].sort(
     (a, b) =>
       new Date(b.createdAt ?? 0).getTime() -
-      new Date(a.createdAt ?? 0).getTime()
+      new Date(a.createdAt ?? 0).getTime(),
   );
 
   // Group by category
@@ -97,7 +97,7 @@ const AllProducts: React.FC = () => {
         {/* CATEGORY SECTIONS */}
         {Object.entries(groupedProducts).map(([category, categoryProducts]) => {
           const whatsappLinkGenerator = (
-            product: (typeof categoryProducts)[0]
+            product: (typeof categoryProducts)[0],
           ) =>
             user &&
             user.id !== product.sellerId &&
@@ -105,7 +105,7 @@ const AllProducts: React.FC = () => {
               ? `https://wa.me/${
                   product.seller.whatsappNumber
                 }?text=${encodeURIComponent(
-                  `Hello ${product.seller.fullName}, my name is ${user.fullName}. I am interested in your product "${product.title}". Is it available?`
+                  `Hello ${product.seller.fullName}, my name is ${user.fullName}. I am interested in your product "${product.title}". Is it available?`,
                 )}`
               : null;
 
@@ -127,13 +127,13 @@ const AllProducts: React.FC = () => {
               {/* HORIZONTAL SCROLLER */}
               <div className="flex gap-6 overflow-x-auto pb-6 scrollbar-hide snap-x snap-mandatory">
                 {categoryProducts.slice(0, 4).map((product) => {
-                  const productShop = myShops.find(
-                    (shop) => shop.ownerId === product.sellerId
-                  );
+                  // const productShop = myShops.find(
+                  //   (shop) => shop.ownerId === product.sellerId,
+                  // );
 
                   const isOwner = user?.id === product.sellerId;
                   const isFavourite = favourites.some(
-                    (fav) => fav.productId === product.id
+                    (fav) => fav.productId === product.id,
                   );
                   const whatsappLink = whatsappLinkGenerator(product);
 
@@ -177,7 +177,7 @@ const AllProducts: React.FC = () => {
                             {product.description}
                           </p>
 
-                          {productShop?.address && (
+                          {/* {productShop?.address && (
                             <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
                               <span className="font-semibold">Location:</span>{" "}
                               <button
@@ -187,10 +187,10 @@ const AllProducts: React.FC = () => {
                                   e.stopPropagation();
                                   window.open(
                                     `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-                                      productShop.address
+                                      productShop.address,
                                     )}`,
                                     "_blank",
-                                    "noopener,noreferrer"
+                                    "noopener,noreferrer",
                                   );
                                 }}
                                 className="underline hover:text-indigo-600 dark:hover:text-indigo-400 text-left"
@@ -198,7 +198,7 @@ const AllProducts: React.FC = () => {
                                 {productShop.address}
                               </button>
                             </p>
-                          )}
+                          )} */}
 
                           {product.averageRating !== undefined && (
                             <div className="flex items-center gap-2 mt-3">
@@ -234,10 +234,10 @@ const AllProducts: React.FC = () => {
                                 product.condition === "BRAND_NEW"
                                   ? "bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400"
                                   : product.condition === "SLIGHTLY_USED"
-                                  ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-400"
-                                  : product.condition === "REFURBISHED"
-                                  ? "bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-400"
-                                  : "bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300"
+                                    ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-400"
+                                    : product.condition === "REFURBISHED"
+                                      ? "bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-400"
+                                      : "bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300"
                               }`}
                             >
                               {product.condition.replace("_", " ")}
@@ -266,10 +266,10 @@ const AllProducts: React.FC = () => {
                                     0.5
                                       ? "bg-green-500"
                                       : product.stockInCount /
-                                          product.stockTotal >
-                                        0.2
-                                      ? "bg-yellow-400"
-                                      : "bg-red-500"
+                                            product.stockTotal >
+                                          0.2
+                                        ? "bg-yellow-400"
+                                        : "bg-red-500"
                                   }`}
                                   style={{
                                     width: `${
@@ -356,7 +356,7 @@ const AllProducts: React.FC = () => {
                                 {Math.round(
                                   ((product.price - product.discountPrice) /
                                     product.price) *
-                                    100
+                                    100,
                                 )}
                                 % OFF
                               </div>
@@ -372,7 +372,7 @@ const AllProducts: React.FC = () => {
                                   setOpenMenuId(
                                     openMenuId === product.id
                                       ? null
-                                      : product.id
+                                      : product.id,
                                   );
                                 }}
                                 className="p-2.5 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-full shadow-lg hover:scale-110 transition"
@@ -393,14 +393,14 @@ const AllProducts: React.FC = () => {
                                       e.stopPropagation();
                                       try {
                                         await dispatch(
-                                          deleteProduct(product.id)
+                                          deleteProduct(product.id),
                                         ).unwrap();
                                         dispatch(fetchProducts());
                                         setOpenMenuId(null);
                                       } catch (err) {
                                         console.error(
                                           "Failed to delete product:",
-                                          err
+                                          err,
                                         );
                                       }
                                     }}

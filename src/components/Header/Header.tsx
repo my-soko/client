@@ -1,4 +1,3 @@
-// src/components/Header/Header.tsx
 import React, { useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
@@ -81,13 +80,13 @@ const Header: React.FC = () => {
   // Product statistics
   const totalProducts = filteredProducts.length;
   const brandNewCount = filteredProducts.filter(
-    (p) => p.condition === "BRAND_NEW"
+    (p) => p.condition === "BRAND_NEW",
   ).length;
   const slightlyUsedCount = filteredProducts.filter(
-    (p) => p.condition === "SLIGHTLY_USED"
+    (p) => p.condition === "SLIGHTLY_USED",
   ).length;
   const refurbishedCount = filteredProducts.filter(
-    (p) => p.condition === "REFURBISHED"
+    (p) => p.condition === "REFURBISHED",
   ).length;
 
   const totalSales = products.filter((p) => p.status === "sold").length;
@@ -100,9 +99,10 @@ const Header: React.FC = () => {
   const closeMobileMenu = () => setMobileMenuOpen(false);
 
   return (
-<header className="bg-white dark:bg-gray-900 shadow sticky top-0 z-50 border-b border-gray-200 dark:border-gray-700">
-       <div className={`w-full bg-indigo-600 text-white text-sm transition-transform duration-300 ${showTopBar ? "translate-y-0" : "-translate-y-full"}`}>
-
+    <header className="bg-white w-full dark:bg-gray-900 shadow sticky top-0 z-50 border-b border-gray-200 dark:border-gray-700">
+      <div
+        className={`w-full bg-indigo-600 text-white text-sm transition-transform duration-300 ${showTopBar ? "translate-y-0" : "-translate-y-full"}`}
+      >
         <div className="max-w-7xl mx-auto px-4 py-2 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <span>📞 +254 716 570 983</span>
@@ -116,7 +116,7 @@ const Header: React.FC = () => {
       </div>
 
       {/* Main Top Bar */}
-      <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-4">
+      <div className="max-w-8xl mx-auto px-3 py-4 flex items-center justify-between gap-4">
         {/* Logo */}
         <Link
           to="/"
@@ -186,9 +186,9 @@ const Header: React.FC = () => {
         <div className="relative inline-block">
           <button
             onClick={() => setShowShopMap((prev) => !prev)}
-            className="py-2 rounded-lg bg-indigo-600 text-white font-semibold hover:bg-indigo-700"
+            className="py-2 rounded-lg text-white font-semibold hover:text-indigo-600"
           >
-            🗺️ Shops Map
+            🗺️ All Shops
           </button>
           {showShopMap && (
             <div className="absolute left-0 top-full mt-2 bg-white dark:bg-gray-800 shadow-xl rounded-lg p-4 z-50 max-h-64 overflow-y-auto w-56">
@@ -243,7 +243,7 @@ const Header: React.FC = () => {
               className="flex items-center gap-2 text-gray-700 dark:text-gray-300 hover:text-indigo-600 font-medium"
             >
               <Store size={20} />
-              Shops
+              My Shops
             </button>
 
             {showShopMenu && (
@@ -255,7 +255,7 @@ const Header: React.FC = () => {
                       onClick={() => setShowShopMenu(false)}
                       className="block px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700"
                     >
-                      🏬 My Shops
+                      🏬 View
                     </Link>
 
                     <Link

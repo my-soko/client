@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import type { ProductType } from "../../util/productType";
+import type { ProductColor, ProductType } from "../../util/productType";
 import api from "../../api/axios";
 import type { Shop } from "../../types/Shops";
 
@@ -26,6 +26,7 @@ export interface Product {
   subItem?: string | null;
   warranty: string | null;
   condition: "BRAND_NEW" | "SLIGHTLY_USED" | "REFURBISHED";
+  colors?: ProductColor[] | null;
   imageUrl: string;
   images: string[];
   sellerId: string;
@@ -91,6 +92,7 @@ export const fetchProducts = createAsyncThunk<
     const response = await api.get<Product[]>(API_URL, {
       withCredentials: true,
     });
+    console.log(response.data);
     return response.data;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (err: any) {

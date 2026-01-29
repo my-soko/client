@@ -7,10 +7,10 @@ import { warrantyOptions } from "../../util/Warranty";
 import PaymentForm from "../Payment/PaymentForm";
 import { createProduct } from "../../redux/reducers/productReducer";
 import axios from "axios";
-import type { ProductFormData } from "../../util/productType";
+import { AVAILABLE_COLORS, type ProductColor, type ProductFormData } from "../../util/productType";
 import { fetchMyShops } from "../../redux/reducers/shopSlice";
 
-const MAX_IMAGES = 5;
+const MAX_IMAGES = 6;
 
 const CreateProduct: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -20,6 +20,7 @@ const CreateProduct: React.FC = () => {
 
   const [formLocked, setFormLocked] = useState(false);
   const [showPayment, setShowPayment] = useState(false);
+  const [colors, setColors] = useState<ProductColor[]>([]);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [tempProductData, setTempProductData] = useState<any>(null);
   const [message, setMessage] = useState("");
@@ -45,30 +46,27 @@ const CreateProduct: React.FC = () => {
   const [images, setImages] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
 
-
-
   
-const selectedCategory = categories.find(
-  (cat) => cat.name === productData.category
-);
+
+  const selectedCategory = categories.find(
+    (cat) => cat.name === productData.category,
+  );
+
+  const selectedCategoryBrands = selectedCategory?.brands || [];
+  const subItems = selectedCategory?.subItems || [];
+
+  const { myShops } = useSelector((state: RootState) => state.shop);
 
 
-const selectedCategoryBrands = selectedCategory?.brands || [];
-const subItems = selectedCategory?.subItems || [];
 
-const { myShops } = useSelector((state: RootState) => state.shop);
-
-useEffect(() => {
-  dispatch(fetchMyShops());
-}, [dispatch]);
-
+  useEffect(() => {
+    dispatch(fetchMyShops());
+  }, [dispatch]);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleChange = (key: keyof typeof productData, value: any) => {
     setProductData((prev) => ({ ...prev, [key]: value }));
   };
-
- 
 
   // Images
   const addImages = (files: File[]) => {
@@ -77,17 +75,31 @@ useEffect(() => {
     setPreviews((prev) => [...prev, ...newPreviews]);
   };
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files) return;
-    const newFiles = Array.from(e.target.files);
-    const availableSlots = MAX_IMAGES - images.length;
-    if (newFiles.length > availableSlots) {
-      setMessage(
-        `You can only add ${availableSlots} more image(s). Maximum ${MAX_IMAGES} images allowed.`
-      );
-      addImages(newFiles.slice(0, availableSlots));
-    } else addImages(newFiles);
-  };
+ const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  if (!e.target.files) return;
+
+  const newFiles = Array.from(e.target.files);
+  const remainingSlots = MAX_IMAGES - images.length;
+
+  if (remainingSlots <= 0) {
+    setMessage(`Maximum of ${MAX_IMAGES} images allowed.`);
+    e.target.value = ""; 
+    return;
+  }
+
+  if (newFiles.length > remainingSlots) {
+    setMessage(
+      `You can only add ${remainingSlots} more image(s). Maximum ${MAX_IMAGES} images allowed.`,
+    );
+    addImages(newFiles.slice(0, remainingSlots));
+  } else {
+    addImages(newFiles);
+    setMessage("");
+  }
+
+  e.target.value = ""; 
+};
+
 
   const removeImage = (index: number) => {
     setImages((prev) => prev.filter((_, i) => i !== index));
@@ -102,11 +114,13 @@ useEffect(() => {
   const processProductCreation = async (payload: any) => {
     const formData = new FormData();
     Object.entries(payload).forEach(([key, value]) => {
-      if (Array.isArray(value))
-        value.forEach((url) => formData.append("imageUrls", url));
-      else if (value !== null && value !== undefined)
-        formData.append(key, String(value));
-    });
+  if (Array.isArray(value) && key !== "colors") {
+    value.forEach((v) => formData.append(key, v));
+  } else if (key === "colors") {
+    formData.append("colors", JSON.stringify(value));
+  } else if (value !== null && value !== undefined) {
+    formData.append(key, String(value));
+  }});
 
     const result = await dispatch(createProduct(formData));
     if (createProduct.fulfilled.match(result)) {
@@ -128,7 +142,6 @@ useEffect(() => {
       return setMessage("Please upload at least one product image.");
     if (!productData.whatsappNumber.trim())
       return setMessage("Please provide your WhatsApp number.");
-   
 
     if (
       !productData.title.trim() ||
@@ -147,7 +160,7 @@ useEffect(() => {
       const uploadRes = await axios.post(
         "http://localhost:5000/api/upload/temp",
         uploadForm,
-        { headers: { "Content-Type": "multipart/form-data" }, timeout: 60000 }
+        { headers: { "Content-Type": "multipart/form-data" }, timeout: 60000 },
       );
 
       const uploadedUrls: string[] = uploadRes.data.urls;
@@ -161,19 +174,20 @@ useEffect(() => {
           : null,
         stockInCount: Number(productData.stockInCount) || 1,
         imageUrls: uploadedUrls,
-        
+        colors,
       };
 
       if (isAdmin) return processProductCreation(payload);
       setTempProductData(payload);
       setShowPayment(true);
+      
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       console.error(err);
       setMessage(
         err.response?.data?.message ||
           err.message ||
-          "Upload failed. Try again."
+          "Upload failed. Try again.",
       );
       setFormLocked(false);
     }
@@ -249,7 +263,7 @@ useEffect(() => {
             onChange={(e) => handleChange("title", e.target.value)}
             required
             disabled={formLocked}
-            className="w-full px-5 py-4 border rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
+            className="w-full px-5 py-4 border bg-white dark:bg-gray-800 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
           />
           <textarea
             placeholder="Detailed Description"
@@ -258,7 +272,7 @@ useEffect(() => {
             onChange={(e) => handleChange("description", e.target.value)}
             required
             disabled={formLocked}
-            className="w-full px-5 py-4 border rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none resize-none"
+            className="w-full px-5 py-4 border bg-white dark:bg-gray-800 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none resize-none"
           />
 
           {/* Prices */}
@@ -270,7 +284,7 @@ useEffect(() => {
               onChange={(e) => handleChange("price", e.target.value)}
               required
               disabled={formLocked}
-              className="px-5 py-4 border rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
+              className="px-5 py-4 border rounded-xl bg-white dark:bg-gray-800 focus:ring-2 focus:ring-indigo-500 outline-none"
             />
             <input
               type="number"
@@ -278,7 +292,7 @@ useEffect(() => {
               value={productData.discountPrice}
               onChange={(e) => handleChange("discountPrice", e.target.value)}
               disabled={formLocked}
-              className="px-5 py-4 border rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
+              className="px-5 py-4 border rounded-xl bg-white dark:bg-gray-800 focus:ring-2 focus:ring-indigo-500 outline-none"
             />
           </div>
 
@@ -290,7 +304,7 @@ useEffect(() => {
             onChange={(e) => handleChange("stockInCount", e.target.value)}
             required
             disabled={formLocked}
-            className="w-full px-5 py-4 border rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
+            className="w-full px-5 py-4 border bg-white dark:bg-gray-800 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
           />
 
           {/* Category & Brand */}
@@ -302,11 +316,15 @@ useEffect(() => {
             }}
             required
             disabled={formLocked}
-            className="w-full px-5 py-4 border rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
+            className="w-full px-5 py-4 border bg-white dark:bg-gray-800 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
           >
             <option value="">Select Category</option>
             {categories.map((cat) => (
-              <option key={cat.name} value={cat.name}>
+              <option
+                className="bg-white dark:bg-gray-800"
+                key={cat.name}
+                value={cat.name}
+              >
                 {cat.name}
               </option>
             ))}
@@ -316,7 +334,7 @@ useEffect(() => {
             onChange={(e) => handleChange("brand", e.target.value)}
             required
             disabled={!productData.category || formLocked}
-            className="w-full px-5 py-4 border rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none disabled:opacity-60"
+            className="w-full px-5 py-4 border dark:bg-gray-800 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none disabled:opacity-60"
           >
             <option value="">
               {productData.category ? "Select Brand" : "Select Category First"}
@@ -329,19 +347,21 @@ useEffect(() => {
           </select>
 
           {subItems.length > 0 && (
-  <select
-    value={productData.subItem || ""}
-    onChange={(e) => handleChange("subItem", e.target.value)}
-    required
-    disabled={!productData.brand || formLocked}
-    className="w-full px-5 py-4 border rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none disabled:opacity-60"
-  >
-    <option value="">Select Specific Item</option>
-    {subItems.map((item) => (
-      <option key={item} value={item}>{item}</option>
-    ))}
-  </select>
-)}
+            <select
+              value={productData.subItem || ""}
+              onChange={(e) => handleChange("subItem", e.target.value)}
+              required
+              disabled={!productData.brand || formLocked}
+              className="w-full px-5 py-4 border bg-white dark:bg-gray-800 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none disabled:opacity-60"
+            >
+              <option value="">Select Specific Item</option>
+              {subItems.map((item) => (
+                <option key={item} value={item}>
+                  {item}
+                </option>
+              ))}
+            </select>
+          )}
 
           {/* Product Type & Shop Address */}
           <div className="space-y-2">
@@ -349,7 +369,7 @@ useEffect(() => {
             <select
               value={productData.productType}
               onChange={(e) => handleChange("productType", e.target.value)}
-              className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-3 focus:ring-2 focus:ring-indigo-500"
+              className="w-full border border-gray-300 bg-white dark:bg-gray-800 dark:border-gray-600 rounded-lg px-4 py-3 focus:ring-2 focus:ring-indigo-500"
             >
               <option value="INDIVIDUAL">Individual Seller</option>
               <option value="SHOP">Shop / Business</option>
@@ -360,32 +380,31 @@ useEffect(() => {
                 : "Individual sellers do not require a location"}
             </p>
           </div>
-{productData.productType === "SHOP" && (
-  <div className="space-y-4 rounded-xl border p-4">
-    <h3 className="font-semibold">Select Shop</h3>
+          {productData.productType === "SHOP" && (
+            <div className="space-y-4 rounded-xl border p-4 bg-white dark:bg-gray-800">
+              <h3 className="font-semibold ">Select Shop</h3>
 
-    <select
-      value={productData.shopId || ""}
-      onChange={(e) => handleChange("shopId", e.target.value)}
-      required
-      className="w-full border rounded-lg px-4 py-3"
-    >
-      <option value="">Select a Shop</option>
-      {myShops.map((shop) => (
-        <option key={shop.id} value={shop.id}>
-          {shop.name}
-        </option>
-      ))}
-    </select>
+              <select
+                value={productData.shopId || ""}
+                onChange={(e) => handleChange("shopId", e.target.value)}
+                required
+                className="w-full border rounded-lg px-4 py-3"
+              >
+                <option value="">Select a Shop</option>
+                {myShops.map((shop) => (
+                  <option key={shop.id} value={shop.id}>
+                    {shop.name}
+                  </option>
+                ))}
+              </select>
 
-    {myShops.length === 0 && (
-      <p className="text-sm text-red-500">
-        You don’t have any shops yet. Create one first.
-      </p>
-    )}
-  </div>
-)}
-
+              {myShops.length === 0 && (
+                <p className="text-sm text-red-500">
+                  You don’t have any shops yet. Create one first.
+                </p>
+              )}
+            </div>
+          )}
 
           {/* Condition & Warranty */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -394,12 +413,21 @@ useEffect(() => {
               onChange={(e) => handleChange("condition", e.target.value)}
               required
               disabled={formLocked}
-              className="px-5 py-4 border rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
+              className="px-5 py-4 border bg-white dark:bg-gray-800 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
             >
               <option value="">Select Condition</option>
-              <option value="BRAND_NEW">Brand New</option>
-              <option value="SLIGHTLY_USED">Slightly Used</option>
-              <option value="REFURBISHED">Refurbished</option>
+              <option className="bg-white dark:bg-gray-800" value="BRAND_NEW">
+                Brand New
+              </option>
+              <option
+                className="bg-white dark:bg-gray-800"
+                value="SLIGHTLY_USED"
+              >
+                Slightly Used
+              </option>
+              <option className="bg-white dark:bg-gray-800" value="REFURBISHED">
+                Refurbished
+              </option>
             </select>
             <select
               value={productData.warranty}
@@ -409,7 +437,11 @@ useEffect(() => {
             >
               <option value="">No Warranty</option>
               {warrantyOptions.map((opt) => (
-                <option key={opt.value} value={opt.value}>
+                <option
+                  className="bg-white dark:bg-gray-800"
+                  key={opt.value}
+                  value={opt.value}
+                >
                   {opt.label}
                 </option>
               ))}
@@ -497,6 +529,49 @@ useEffect(() => {
               </div>
             )}
           </div>
+
+        {/* Available Colors */}
+<div>
+  <label className="block font-medium mb-3">Available Colors</label>
+
+  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+    {AVAILABLE_COLORS.map((color) => {
+      const selected = colors.some(
+        (c) => c.hex === color.hex
+      );
+
+      return (
+        <button
+          type="button"
+          key={color.hex}
+         onClick={() => {
+  setColors((prev) => {
+    const newColors = selected
+      ? prev.filter((c) => c.hex !== color.hex)
+      : [...prev, color];
+    console.log("Updated selected colors:", newColors); // <-- log here
+    return newColors;
+  });
+}}
+
+          className={`flex items-center gap-2 px-3 py-2 rounded-lg border transition
+            ${
+              selected
+                ? "border-indigo-600 bg-indigo-50 dark:bg-indigo-900/30"
+                : "border-gray-300 dark:border-gray-600"
+            }`}
+        >
+          <span
+            className="w-5 h-5 rounded-full border"
+            style={{ backgroundColor: color.hex }}
+          />
+          <span className="text-sm">{color.name}</span>
+        </button>
+      );
+    })}
+  </div>
+</div>
+
 
           <button
             type="submit"
