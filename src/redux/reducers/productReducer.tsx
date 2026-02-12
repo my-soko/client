@@ -59,6 +59,10 @@ interface ProductState {
   searchQuery: string;
   brandFilter: string;
   conditionFilter: string;
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
 }
 
 // ----------------------------
@@ -78,21 +82,36 @@ const initialState: ProductState = {
   maxPrice: null,
   sortBy: "",
   clearFilter: false,
+  page: 1,
+  limit: 10,
+  total: 0,
+  totalPages: 1,
 };
 
 // ----------------------------
 // FETCH ALL PRODUCTS
-// ----------------------------
 export const fetchProducts = createAsyncThunk<
-  Product[], // success return type
-  void, // argument type
-  { rejectValue: ErrorResponse } // reject value type
->("product/fetchProducts", async (_, { rejectWithValue }) => {
+  {
+    products: Product[];
+    total: number;
+    page: number;
+    totalPages: number;
+  },
+  {
+    search?: string;
+    category?: string;
+    brand?: string;
+    page?: number;
+    limit?: number;
+  },
+  { rejectValue: ErrorResponse }
+>("product/fetchProducts", async (params, { rejectWithValue }) => {
   try {
-    const response = await api.get<Product[]>(API_URL, {
+    const response = await api.get(API_URL, {
+      params,
       withCredentials: true,
     });
-    console.log(response.data);
+
     return response.data;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (err: any) {
@@ -171,214 +190,106 @@ const productSlice = createSlice({
   name: "product",
   initialState,
   reducers: {
+    setSearchQuery(state, action) {
+      state.searchQuery = action.payload;
+      state.page = 1;
+    },
+
+    setCategoryFilter(state, action) {
+      state.categoryFilter = action.payload;
+      state.page = 1;
+    },
+
+    setBrandFilter(state, action) {
+      state.brandFilter = action.payload;
+      state.page = 1;
+    },
+
+    setConditionFilter(
+      state,
+      action: { payload: ProductState["conditionFilter"] },
+    ) {
+      state.conditionFilter = action.payload;
+      state.page = 1;
+    },
+
+    setMinPrice(state, action: { payload: ProductState["minPrice"] }) {
+      state.minPrice = action.payload;
+      state.page = 1;
+    },
+
+    setMaxPrice(state, action: { payload: ProductState["maxPrice"] }) {
+      state.maxPrice = action.payload;
+      state.page = 1;
+    },
+
+    setPage(state, action) {
+      state.page = action.payload;
+    },
+
+    setSortBy(state, action: { payload: ProductState["sortBy"] }) {
+      state.sortBy = action.payload;
+    },
+
     clearAllFilters(state) {
-      state.categoryFilter = "";
       state.searchQuery = "";
+      state.categoryFilter = "";
       state.brandFilter = "";
       state.conditionFilter = "";
       state.minPrice = null;
       state.maxPrice = null;
       state.sortBy = "";
-      state.clearFilter = true;
-
-      // Reset filtered products to all products
-      state.filteredProducts = state.products;
-    },
-    setMinPrice(state, action) {
-      state.minPrice = action.payload;
-
-      state.filteredProducts = state.products.filter((p) => {
-        const meetsCategory = state.categoryFilter
-          ? p.category.toLowerCase() === state.categoryFilter.toLowerCase()
-          : true;
-
-        const meetsSearch = state.searchQuery
-          ? p.title.toLowerCase().includes(state.searchQuery.toLowerCase())
-          : true;
-
-        const meetsBrand = state.brandFilter
-          ? p.brand?.toLowerCase() === state.brandFilter.toLowerCase()
-          : true;
-
-        const meetsCondition = state.conditionFilter
-          ? p.condition?.toLowerCase() === state.conditionFilter.toLowerCase()
-          : true;
-
-        const meetsMin = state.minPrice ? p.price >= state.minPrice : true;
-
-        const meetsMax = state.maxPrice ? p.price <= state.maxPrice : true;
-
-        return (
-          meetsCategory &&
-          meetsSearch &&
-          meetsBrand &&
-          meetsCondition &&
-          meetsMin &&
-          meetsMax
-        );
-      });
+      state.page = 1;
     },
 
-    setMaxPrice(state, action) {
-      state.maxPrice = action.payload;
+    filterProducts(state) {
+      let filtered = [...state.products];
 
-      state.filteredProducts = state.products.filter((p) => {
-        const meetsCategory = state.categoryFilter
-          ? p.category.toLowerCase() === state.categoryFilter.toLowerCase()
-          : true;
-
-        const meetsSearch = state.searchQuery
-          ? p.title.toLowerCase().includes(state.searchQuery.toLowerCase())
-          : true;
-
-        const meetsBrand = state.brandFilter
-          ? p.brand?.toLowerCase() === state.brandFilter.toLowerCase()
-          : true;
-
-        const meetsCondition = state.conditionFilter
-          ? p.condition?.toLowerCase() === state.conditionFilter.toLowerCase()
-          : true;
-
-        const meetsMin = state.minPrice ? p.price >= state.minPrice : true;
-
-        const meetsMax = state.maxPrice ? p.price <= state.maxPrice : true;
-
-        return (
-          meetsCategory &&
-          meetsSearch &&
-          meetsBrand &&
-          meetsCondition &&
-          meetsMin &&
-          meetsMax
-        );
-      });
-    },
-
-    setSortBy(state, action) {
-      state.sortBy = action.payload;
-
-      if (action.payload === "latest") {
-        state.filteredProducts = [...state.filteredProducts].sort(
-          (a, b) => Number(b.id) - Number(a.id)
+      if (state.searchQuery) {
+        filtered = filtered.filter((p) =>
+          p.title.toLowerCase().includes(state.searchQuery.toLowerCase()),
         );
       }
 
-      if (action.payload === "price_low_high") {
-        state.filteredProducts = [...state.filteredProducts].sort(
-          (a, b) => a.price - b.price
+      if (state.categoryFilter) {
+        filtered = filtered.filter((p) => p.category === state.categoryFilter);
+      }
+
+      if (state.brandFilter) {
+        filtered = filtered.filter((p) => p.brand === state.brandFilter);
+      }
+
+      if (state.conditionFilter) {
+        filtered = filtered.filter(
+          (p) => p.condition === state.conditionFilter,
         );
       }
 
-      if (action.payload === "price_high_low") {
-        state.filteredProducts = [...state.filteredProducts].sort(
-          (a, b) => b.price - a.price
-        );
+      if (state.minPrice !== null) {
+        const minPrice = state.minPrice; 
+        filtered = filtered.filter((p) => p.price >= minPrice);
       }
-    },
 
-    setConditionFilter(state, action) {
-      state.conditionFilter = action.payload;
+      if (state.maxPrice !== null) {
+        const maxPrice = state.maxPrice;
+        filtered = filtered.filter((p) => p.price <= maxPrice);
+      }
 
-      state.filteredProducts = state.products
-        .filter((p) =>
-          state.categoryFilter
-            ? p.category.toLowerCase() === state.categoryFilter.toLowerCase()
-            : true
-        )
-        .filter((p) =>
-          state.searchQuery
-            ? p.title.toLowerCase().includes(state.searchQuery.toLowerCase())
-            : true
-        )
-        .filter((p) =>
-          state.brandFilter
-            ? p.brand?.toLowerCase() === state.brandFilter.toLowerCase()
-            : true
-        )
-        .filter((p) =>
-          state.conditionFilter
-            ? p.condition?.toLowerCase() === state.conditionFilter.toLowerCase()
-            : true
+      // Sorting
+      if (state.sortBy === "latest") {
+        filtered.sort(
+          (a, b) =>
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
         );
+      } else if (state.sortBy === "price_low_high") {
+        filtered.sort((a, b) => a.price - b.price);
+      } else if (state.sortBy === "price_high_low") {
+        filtered.sort((a, b) => b.price - a.price);
+      }
+
+      state.filteredProducts = filtered;
     },
-
-    setBrandFilter(state, action) {
-      state.brandFilter = action.payload;
-
-      state.filteredProducts = state.products
-        .filter((p) =>
-          state.categoryFilter
-            ? p.category.toLowerCase() === state.categoryFilter.toLowerCase()
-            : true
-        )
-        .filter((p) =>
-          state.searchQuery
-            ? p.title.toLowerCase().includes(state.searchQuery.toLowerCase())
-            : true
-        )
-        .filter((p) =>
-          state.brandFilter
-            ? p.brand?.toLowerCase() === state.brandFilter.toLowerCase()
-            : true
-        )
-        .filter((p) =>
-          state.conditionFilter
-            ? p.condition?.toLowerCase() === state.conditionFilter.toLowerCase()
-            : true
-        );
-    },
-
-    setCategoryFilter(state, action) {
-      state.categoryFilter = action.payload;
-
-      state.filteredProducts = state.products
-        .filter((p) =>
-          state.categoryFilter
-            ? p.category.toLowerCase() === state.categoryFilter.toLowerCase()
-            : true
-        )
-        .filter((p) =>
-          state.searchQuery
-            ? p.title.toLowerCase().includes(state.searchQuery.toLowerCase())
-            : true
-        )
-        .filter((p) =>
-          state.brandFilter
-            ? p.brand?.toLowerCase() === state.brandFilter.toLowerCase()
-            : true
-        )
-        .filter((p) =>
-          state.conditionFilter
-            ? p.condition?.toLowerCase() === state.conditionFilter.toLowerCase()
-            : true
-        );
-    },
-
-    setSearchQuery(state, action) {
-      state.searchQuery = action.payload;
-
-      state.filteredProducts = state.products
-        .filter((p) =>
-          state.categoryFilter
-            ? p.category.toLowerCase() === state.categoryFilter.toLowerCase()
-            : true
-        )
-        .filter((p) =>
-          state.searchQuery
-            ? p.title.toLowerCase().includes(state.searchQuery.toLowerCase())
-            : true
-        )
-        .filter((p) =>
-          state.brandFilter
-            ? p.brand?.toLowerCase() === state.brandFilter.toLowerCase()
-            : true
-        )
-        .filter((p) =>
-          state.conditionFilter
-            ? p.condition?.toLowerCase() === state.conditionFilter.toLowerCase()
-            : true
-        );
-    },
+    
   },
 
   extraReducers: (builder) => {
@@ -389,17 +300,12 @@ const productSlice = createSlice({
     });
     builder.addCase(fetchProducts.fulfilled, (state, action) => {
       state.loading = false;
-      state.products = action.payload;
-
-      // Apply category filter if it exists
-      if (state.categoryFilter) {
-        state.filteredProducts = action.payload.filter(
-          (p) => p.category.toLowerCase() === state.categoryFilter.toLowerCase()
-        );
-      } else {
-        state.filteredProducts = action.payload;
-      }
+      state.products = action.payload.products;
+      state.total = action.payload.total;
+      state.page = action.payload.page;
+      state.totalPages = action.payload.totalPages;
     });
+
     builder.addCase(fetchProducts.rejected, (state, action) => {
       state.loading = false;
       state.error = action.payload?.message || "Failed to fetch products";
@@ -428,7 +334,7 @@ const productSlice = createSlice({
     builder.addCase(updateProduct.fulfilled, (state, action) => {
       state.loading = false;
       state.products = state.products.map((p) =>
-        p.id === action.payload.product.id ? action.payload.product : p
+        p.id === action.payload.product.id ? action.payload.product : p,
       );
     });
     builder.addCase(updateProduct.rejected, (state, action) => {
@@ -463,7 +369,7 @@ const productSlice = createSlice({
     builder.addCase(deleteProduct.fulfilled, (state, action) => {
       state.loading = false;
       state.products = state.products.filter(
-        (product) => product.id !== action.payload.id
+        (product) => product.id !== action.payload.id,
       );
     });
     builder.addCase(deleteProduct.rejected, (state, action) => {
@@ -480,7 +386,9 @@ export const {
   setConditionFilter,
   setMinPrice,
   setMaxPrice,
-  setSortBy,
   clearAllFilters,
+  filterProducts,
+  setSortBy,
+  setPage,
 } = productSlice.actions;
 export default productSlice.reducer;

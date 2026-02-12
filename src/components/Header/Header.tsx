@@ -10,11 +10,12 @@ import {
   setBrandFilter,
   setCategoryFilter,
   setSearchQuery,
-  setConditionFilter,
-  setMinPrice,
-  setMaxPrice,
-  setSortBy,
   clearAllFilters,
+  filterProducts,
+  setSortBy,
+  setMaxPrice,
+  setMinPrice,
+  setConditionFilter,
 } from "../../redux/reducers/productReducer";
 
 import { Menu, X, User, Heart, DollarSign } from "lucide-react";
@@ -35,6 +36,9 @@ const Header: React.FC = () => {
     maxPrice,
     sortBy,
     products,
+    brandFilter,
+    conditionFilter,
+    searchQuery,
   } = useSelector((state: RootState) => state.product);
 
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
@@ -43,6 +47,20 @@ const Header: React.FC = () => {
   const [showShopMenu, setShowShopMenu] = React.useState(false);
 
   const navigate = useNavigate();
+
+  useEffect(() => {
+    dispatch(filterProducts());
+  }, [
+    categoryFilter,
+    brandFilter,
+    conditionFilter,
+    searchQuery,
+    minPrice,
+    maxPrice,
+    sortBy,
+    products,
+  ]);
+
   useEffect(() => {
     if (user) dispatch(fetchFavourites());
   }, [dispatch, user]);
@@ -322,8 +340,9 @@ const Header: React.FC = () => {
 
               <select
                 value={sortBy}
-                onChange={(e) => dispatch(setSortBy(e.target.value))}
-                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-transparent text-gray-900 dark:text-white"
+                onChange={(e) =>
+                  dispatch(setSortBy(e.target.value as typeof sortBy))
+                }
               >
                 <option value="" className="dark:bg-gray-800">
                   Sort By
@@ -348,7 +367,7 @@ const Header: React.FC = () => {
                 placeholder="Min"
                 value={minPrice || ""}
                 onChange={(e) =>
-                  dispatch(setMinPrice(Number(e.target.value) || undefined))
+                  dispatch(setMinPrice(Number(e.target.value) as typeof minPrice))
                 }
                 className="w-24 px-3 py-1 border border-gray-300 dark:border-gray-600 rounded bg-transparent text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
               />
@@ -358,7 +377,7 @@ const Header: React.FC = () => {
                 placeholder="Max"
                 value={maxPrice || ""}
                 onChange={(e) =>
-                  dispatch(setMaxPrice(Number(e.target.value) || undefined))
+                  dispatch(setMaxPrice(Number(e.target.value) as typeof maxPrice))
                 }
                 className="w-24 px-3 py-1 border border-gray-300 dark:border-gray-600 rounded bg-transparent text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
               />
@@ -471,7 +490,7 @@ const Header: React.FC = () => {
                   placeholder="Min Price"
                   value={minPrice || ""}
                   onChange={(e) =>
-                    dispatch(setMinPrice(Number(e.target.value) || undefined))
+                    dispatch(setMinPrice(Number(e.target.value)as typeof minPrice))
                   }
                   className="px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-transparent text-gray-900 dark:text-white"
                 />
@@ -480,17 +499,18 @@ const Header: React.FC = () => {
                   placeholder="Max Price"
                   value={maxPrice || ""}
                   onChange={(e) =>
-                    dispatch(setMaxPrice(Number(e.target.value) || undefined))
+                    dispatch(setMaxPrice(Number(e.target.value) as typeof maxPrice))
                   }
                   className="px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-transparent text-gray-900 dark:text-white"
                 />
               </div>
             </div>
-            <select
-              value={sortBy}
-              onChange={(e) => dispatch(setSortBy(e.target.value))}
-              className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-transparent text-gray-900 dark:text-white"
-            >
+           <select
+                value={sortBy}
+                onChange={(e) =>
+                  dispatch(setSortBy(e.target.value as typeof sortBy))
+                }
+              >
               <option value="" className="dark:bg-gray-800">
                 Sort By
               </option>

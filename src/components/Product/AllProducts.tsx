@@ -1,4 +1,3 @@
-// src/components/Product/AllProducts.tsx
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
@@ -16,7 +15,6 @@ import { Heart } from "lucide-react";
 import Header from "../Header/Header";
 import Footer from "../Footer/Footer";
 import { formatDate } from "../../util/FormDate";
-import { fetchMyShops } from "../../redux/reducers/shopSlice";
 
 const AllProducts: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -25,13 +23,22 @@ const AllProducts: React.FC = () => {
   const { user } = useSelector((state: RootState) => state.auth);
   const { favourites } = useSelector((state: RootState) => state.favourites);
   const {
-    filteredProducts: products,
+    products,
     loading,
     error,
+    searchQuery,
+    categoryFilter,
+    brandFilter,
+    filteredProducts,
+    page,
+    limit,
   } = useSelector((state: RootState) => state.product);
-  // const { myShops } = useSelector((state: RootState) => state.shop);
 
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+
+  useEffect(() => {
+    dispatch(fetchProducts({ page: 1, limit: 1000 })); 
+  }, []);
 
   const renderStars = (rating: number) =>
     Array.from({ length: 5 }, (_, i) => (
@@ -45,17 +52,13 @@ const AllProducts: React.FC = () => {
       </span>
     ));
 
-  useEffect(() => {
-    dispatch(fetchProducts());
-    dispatch(fetchMyShops());
-  }, [dispatch]);
-
   if (loading)
     return (
       <div className="text-center mt-20 text-gray-600 dark:text-gray-400">
         Loading products...
       </div>
     );
+
   if (error)
     return (
       <div className="text-center mt-20 text-red-500 dark:text-red-400">
@@ -63,21 +66,17 @@ const AllProducts: React.FC = () => {
       </div>
     );
 
-  // Sort products by newest first
-  const sortedProducts = [...products].sort(
-    (a, b) =>
-      new Date(b.createdAt ?? 0).getTime() -
-      new Date(a.createdAt ?? 0).getTime(),
-  );
+  const displayProducts =
+    filteredProducts.length > 0 ? filteredProducts : products;
 
-  // Group by category
-  const groupedProducts = sortedProducts.reduce<
-    Record<string, typeof products>
-  >((acc, product) => {
-    acc[product.category] ??= [];
-    acc[product.category].push(product);
-    return acc;
-  }, {});
+  const groupedProducts = displayProducts.reduce<
+  Record<string, typeof displayProducts>
+>((acc, product) => {
+  acc[product.category] ??= [];
+  acc[product.category].push(product);
+  return acc;
+}, {});
+
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-slate-900">
@@ -85,7 +84,7 @@ const AllProducts: React.FC = () => {
 
       <main className="flex-1 px-4 py-8 md:p-6">
         {/* SELL BUTTON */}
-        <div className="max-w-7xl mx-auto flex justify-end mb-10">
+        <div className="max-w-9xl mx-auto flex justify-end mb-10">
           <Link
             to="/create"
             className="px-6 py-3 bg-indigo-600 dark:bg-indigo-500 text-white font-medium rounded-lg shadow-md hover:bg-indigo-700 dark:hover:bg-indigo-400 transition"
@@ -140,7 +139,7 @@ const AllProducts: React.FC = () => {
                   return (
                     <div
                       key={product.id}
-                      className="flex-none w-[92vw] md:w-[22vw] sm:w-72 md:w-80 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-md hover:shadow-2xl dark:hover:shadow-gray-900 transition-all duration-300 overflow-hidden relative group snap-start"
+                      className="flex-none w-[92vw] md:w-[17vw] sm:w-72 md:w-80 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-md hover:shadow-2xl dark:hover:shadow-gray-900 transition-all duration-300 overflow-hidden relative group snap-start"
                     >
                       <Link to={`/product/${product.id}`} className="block">
                         {/* IMAGE */}
@@ -176,29 +175,6 @@ const AllProducts: React.FC = () => {
                           <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2 mt-1">
                             {product.description}
                           </p>
-
-                          {/* {productShop?.address && (
-                            <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                              <span className="font-semibold">Location:</span>{" "}
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  window.open(
-                                    `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-                                      productShop.address,
-                                    )}`,
-                                    "_blank",
-                                    "noopener,noreferrer",
-                                  );
-                                }}
-                                className="underline hover:text-indigo-600 dark:hover:text-indigo-400 text-left"
-                              >
-                                {productShop.address}
-                              </button>
-                            </p>
-                          )} */}
 
                           {product.averageRating !== undefined && (
                             <div className="flex items-center gap-2 mt-3">
@@ -395,7 +371,17 @@ const AllProducts: React.FC = () => {
                                         await dispatch(
                                           deleteProduct(product.id),
                                         ).unwrap();
-                                        dispatch(fetchProducts());
+                                        dispatch(
+                                          fetchProducts({
+                                            search: searchQuery || undefined,
+                                            category:
+                                              categoryFilter || undefined,
+                                            brand: brandFilter || undefined,
+                                            page,
+                                            limit,
+                                          }),
+                                        );
+
                                         setOpenMenuId(null);
                                       } catch (err) {
                                         console.error(
