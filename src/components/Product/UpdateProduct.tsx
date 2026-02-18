@@ -61,20 +61,21 @@ const UpdateProduct: React.FC = () => {
     shopId: "",
   });
 
-  const [newImages, setNewImages] = useState<File[]>([]);
-  const [newPreviews, setNewPreviews] = useState<string[]>([]);
-  const [existingCover, setExistingCover] = useState<string>("");
-  const [existingGallery, setExistingGallery] = useState<string[]>([]);
-  const [removeImages, setRemoveImages] = useState<string[]>([]);
-  const [imageError, setImageError] = useState<string>("");
-
+ const [existingCover, setExistingCover] = useState<string>(""); // main image
+const [existingGallery, setExistingGallery] = useState<string[]>([]); // other images
+const [removeImages, setRemoveImages] = useState<string[]>([]);
+const [newImages, setNewImages] = useState<File[]>([]);
+const [newPreviews, setNewPreviews] = useState<string[]>([]);
+const [imageError, setImageError] = useState("");
   // Calculate current total images that will remain after update
   const filteredGallery = existingGallery.filter(
     (img) => !removeImages.includes(img),
   );
-  const remainingExistingImages = filteredGallery.length;
+const hasCover = !!(existingCover && !removeImages.includes(existingCover));
+const remainingExistingImages = filteredGallery.length + (hasCover ? 1 : 0);
+const totalImagesAfterUpdate = remainingExistingImages + newImages.length;
 
-  const totalImagesAfterUpdate = remainingExistingImages + newImages.length;
+
 
   // Merge all images for preview
   const allPreviews = [
@@ -93,6 +94,11 @@ const UpdateProduct: React.FC = () => {
 
   const { myShops } = useSelector((state: RootState) => state.shop);
 
+//   useEffect(() => {
+//   if (!id) return;
+//   dispatch(fetchProductById(id));
+// }, [id, dispatch]); 
+
   useEffect(() => {
     dispatch(fetchMyShops());
   }, [dispatch]);
@@ -104,7 +110,7 @@ const UpdateProduct: React.FC = () => {
   // Initialize form and images
   useEffect(() => {
     if (!product) return;
-
+       console.log("Initializing form with product:", product);
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setFormData({
       title: product.title || "",
@@ -128,74 +134,86 @@ const UpdateProduct: React.FC = () => {
     setExistingCover(product.imageUrl || "");
     setExistingGallery(product.images || []);
     setRemoveImages([]);
-    setNewImages([]);
-    setNewPreviews([]);
-    setImageError("");
   }, [product]);
 
   const handleChange = (key: keyof FormData, value: string | boolean) => {
     setFormData((prev) => ({ ...prev, [key]: value }));
   };
 
-  const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files) return;
 
-    const selectedFiles = Array.from(e.target.files);
-    const availableSlots = MAX_IMAGES - remainingExistingImages;
+const removeNewImage = (index: number) => {
+    console.log("Removing new image at index:", index, "URL:", newPreviews[index]);
+  setNewImages((prev) => prev.filter((_, i) => i !== index));
+  setNewPreviews((prev) => {
+    URL.revokeObjectURL(prev[index]);
+    return prev.filter((_, i) => i !== index);
+  });
+  setImageError("");
+};
 
-    if (selectedFiles.length > availableSlots) {
-      setImageError(
-        `You can only add ${availableSlots} more image(s). Maximum total of ${MAX_IMAGES} images allowed.`,
-      );
-      // Optionally allow partial addition up to limit
-      const allowedFiles = selectedFiles.slice(0, availableSlots);
-      setNewImages(allowedFiles);
-      setNewPreviews(allowedFiles.map((file) => URL.createObjectURL(file)));
-    } else {
-      setImageError("");
-      setNewImages(selectedFiles);
-      setNewPreviews(selectedFiles.map((file) => URL.createObjectURL(file)));
-    }
-  };
+ const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {
+  if (!e.target.files) return;
+
+  const selectedFiles = Array.from(e.target.files);
+   console.log("Selected new files:", selectedFiles);
+  const availableSlots = MAX_IMAGES - totalImagesAfterUpdate;
+
+ console.log("Available slots:", availableSlots);
+  if (selectedFiles.length > availableSlots) {
+    setImageError(
+      `You can only add ${availableSlots} more image(s). Maximum total of ${MAX_IMAGES} images allowed.`
+    );
+    const allowedFiles = selectedFiles.slice(0, availableSlots);
+    setNewImages((prev) => [...prev, ...allowedFiles]);
+    setNewPreviews((prev) => [
+      ...prev,
+      ...allowedFiles.map((f) => URL.createObjectURL(f)),
+    ]);
+     console.log("Added files (limited):", allowedFiles);
+  } else {
+    setImageError("");
+    setNewImages((prev) => [...prev, ...selectedFiles]);
+    setNewPreviews((prev) => [
+      ...prev,
+      ...selectedFiles.map((f) => URL.createObjectURL(f)),
+    ]);
+    console.log("Added files:", selectedFiles);
+  }
+
+  e.target.value = ""; // Reset input
+};
 
   const toggleRemoveImage = (url: string) => {
+     console.log(
+    removeImages.includes(url)
+      ? "Unmarking for removal image:" + url
+      : "Marking for removal image:" + url
+  );
     setRemoveImages((prev) =>
       prev.includes(url) ? prev.filter((u) => u !== url) : [...prev, url],
     );
     setImageError(""); // Clear error when removing
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!id) return;
 
-    if (totalImagesAfterUpdate > MAX_IMAGES) {
-      setImageError(`Maximum of ${MAX_IMAGES} images allowed.`);
-      return;
-    }
+ const handleSubmit = async(e: React.FormEvent) => {
+  e.preventDefault();
+  const form = new FormData();
+  Object.entries(formData).forEach(([key, value]) => {
+    if (key === "colors") form.append("colors", JSON.stringify(value));
+    else if (value !== undefined) form.append(key, String(value));
+  });
 
-    if (totalImagesAfterUpdate === 0) {
-      setImageError("Product must have at least one image.");
-      return;
-    }
+  form.append("removeImages", JSON.stringify(removeImages));
+  newImages.forEach((file) => form.append("images", file));
+if (!product?.id) return;
+const result = await dispatch(
+  updateProduct({ id: product.id, formData: form })
+);
 
-    const submitData = new FormData();
-    Object.entries(formData).forEach(([key, value]) => {
-      if (key === "colors") {
-        submitData.append("colors", JSON.stringify(value));
-      } else {
-        submitData.append(key, value.toString());
-      }
-    });
-
-    if (removeImages.length)
-      submitData.append("removeImages", JSON.stringify(removeImages));
-
-    newImages.forEach((file) => submitData.append("images", file));
-
-    const result = await dispatch(updateProduct({ id, formData: submitData }));
-    if (updateProduct.fulfilled.match(result)) navigate("/");
-  };
+ console.log("Update result:", result);
+  if (updateProduct.fulfilled.match(result)) navigate("/");
+};
 
   if (loading && !product)
     return (
@@ -232,82 +250,98 @@ const UpdateProduct: React.FC = () => {
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Images Section */}
-        <div>
-          <label className="block text-lg font-medium text-gray-700 dark:text-gray-300 mb-4">
-            Product Images (Max {MAX_IMAGES})
-          </label>
+{/* Images Section */}
+<div>
+  <label className="block text-lg font-medium text-gray-700 dark:text-gray-300 mb-4">
+    Product Images (Max {MAX_IMAGES})
+  </label>
 
-          <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-            Currently keeping {remainingExistingImages} existing image(s).{" "}
-            {newImages.length > 0 && `Adding ${newImages.length} new.`} Total:{" "}
-            <strong>
-              {totalImagesAfterUpdate}/{MAX_IMAGES}
-            </strong>
-          </p>
+  <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+    Keeping {remainingExistingImages} existing image(s).
+    {newImages.length > 0 && ` Adding ${newImages.length} new.`} Total:{" "}
+    <strong>{totalImagesAfterUpdate}/{MAX_IMAGES}</strong>
+  </p>
 
-          {allPreviews.length > 0 ? (
-            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-5 mb-6">
-              {allPreviews.map((src, idx) => (
-                <div key={idx} className="relative">
-                  <img
-                    src={src}
-                    alt={`Product ${idx + 1}`}
-                    className="w-full h-40 object-cover rounded-lg border-2 border-gray-300 dark:border-gray-600 shadow-md"
-                  />
-                  {(existingCover === src || existingGallery.includes(src)) && (
-                    <button
-                      type="button"
-                      onClick={() => toggleRemoveImage(src)}
-                      className="absolute top-2 right-2 bg-red-600 text-white text-xs px-2 py-1 rounded hover:bg-red-700"
-                    >
-                      {removeImages.includes(src) ? "Undo" : "Remove"}
-                    </button>
-                  )}
-                  {idx === 0 && !removeImages.includes(src) && (
-                    <span className="absolute top-2 left-2 bg-green-600 text-white text-xs px-3 py-1 rounded">
-                      Cover
-                    </span>
-                  )}
-                  {idx >= remainingExistingImages && (
-                    <span className="absolute top-2 left-2 bg-purple-600 text-white text-xs px-3 py-1 rounded">
-                      New
-                    </span>
-                  )}
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-center text-gray-500 py-8">No images yet</p>
-          )}
-
-          {totalImagesAfterUpdate < MAX_IMAGES && (
-            <input
-              type="file"
-              accept="image/*"
-              multiple
-              onChange={handleImageChange}
-              disabled={totalImagesAfterUpdate >= MAX_IMAGES}
-              className="block w-full text-sm text-gray-600 dark:text-gray-400
-                file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0
-                file:text-sm file:font-semibold file:bg-indigo-600 file:text-white
-                hover:file:bg-indigo-700 disabled:file:bg-gray-400"
-            />
-          )}
-
-          {totalImagesAfterUpdate >= MAX_IMAGES && (
-            <p className="text-sm text-orange-600 dark:text-orange-400 mt-3">
-              Maximum of {MAX_IMAGES} images reached. Remove some to add new
-              ones.
-            </p>
-          )}
-
-          {newImages.length > 0 && totalImagesAfterUpdate <= MAX_IMAGES && (
-            <p className="text-sm text-green-600 dark:text-green-400 mt-3">
-              {newImages.length} new image(s) selected. First new image will
-              become cover if current cover is removed.
-            </p>
-          )}
+  {/* Image Previews Grid */}
+  {allPreviews.length > 0 ? (
+    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 mb-6">
+      {/* Existing Images */}
+      {filteredGallery.map((src, idx) => (
+        <div key={`existing-${idx}`} className="relative group">
+          <img
+            src={src}
+            alt={`Existing Image ${idx + 1}`}
+            className="w-full h-40 object-cover rounded-xl border border-gray-300 dark:border-gray-600 shadow-md hover:scale-105 transition-transform"
+          />
+          <button
+            type="button"
+            onClick={() => toggleRemoveImage(src)}
+            className={`absolute top-2 right-2 bg-red-600 text-white text-xs px-2 py-1 rounded
+              ${removeImages.includes(src) ? "opacity-100" : "opacity-0 group-hover:opacity-100"}
+              hover:bg-red-700 transition`}
+          >
+            {removeImages.includes(src) ? "Undo" : "Remove"}
+          </button>
+          <span className="absolute top-2 left-2 bg-blue-600 text-white text-xs px-2 py-1 rounded">
+            Existing
+          </span>
         </div>
+      ))}
+
+      {/* New Images */}
+      {newPreviews.map((src, idx) => (
+        <div key={`new-${idx}`} className="relative group">
+          <img
+            src={src}
+            alt={`New Image ${idx + 1}`}
+            className="w-full h-40 object-cover rounded-xl border border-gray-300 dark:border-gray-600 shadow-md hover:scale-105 transition-transform"
+          />
+          <button
+            type="button"
+            onClick={() => removeNewImage(idx)}
+            className="absolute top-2 right-2 bg-red-600 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 hover:bg-red-700 transition"
+          >
+            Remove
+          </button>
+          <span className="absolute top-2 left-2 bg-purple-600 text-white text-xs px-2 py-1 rounded">
+            New
+          </span>
+        </div>
+      ))}
+    </div>
+  ) : (
+    <p className="text-center text-gray-500 py-8">No images yet</p>
+  )}
+
+  {/* File Input */}
+  {totalImagesAfterUpdate < MAX_IMAGES && (
+    <input
+      type="file"
+      accept="image/*"
+      multiple
+      onChange={handleImageChange}
+      disabled={totalImagesAfterUpdate >= MAX_IMAGES}
+      className="block w-full text-sm text-gray-600 dark:text-gray-400
+        file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0
+        file:text-sm file:font-semibold file:bg-indigo-600 file:text-white
+        hover:file:bg-indigo-700 disabled:file:bg-gray-400"
+    />
+  )}
+
+  {/* Max Images Warning */}
+  {totalImagesAfterUpdate >= MAX_IMAGES && (
+    <p className="text-sm text-orange-600 dark:text-orange-400 mt-3">
+      Maximum of {MAX_IMAGES} images reached. Remove some to add new ones.
+    </p>
+  )}
+
+  {/* New Images Info */}
+  {newImages.length > 0 && totalImagesAfterUpdate <= MAX_IMAGES && (
+    <p className="text-sm text-green-600 dark:text-green-400 mt-3">
+      {newImages.length} new image(s) selected. First new image will become cover if current cover is removed.
+    </p>
+  )}
+</div>
 
         {/* Colors */}
         <div>

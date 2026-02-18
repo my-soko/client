@@ -361,6 +361,8 @@ const productSlice = createSlice({
         action.payload?.message || "Failed to fetch product details";
     });
 
+    
+
     // DELETE PRODUCT
     builder.addCase(deleteProduct.pending, (state) => {
       state.loading = true;

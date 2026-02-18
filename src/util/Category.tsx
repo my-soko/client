@@ -116,6 +116,7 @@ export const categories = [
       "Air Conditioners",
       "Fans",
       "Blenders",
+      "Iron Box",
       "Electric Kettles",
       "Cookers",
     ],
