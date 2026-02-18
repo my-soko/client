@@ -49,19 +49,24 @@ export const registerUser = createAsyncThunk<
   }
 });
 
-// LOGIN
 export const loginUser = createAsyncThunk<
-  User,
+  void,
   { email: string; password: string },
   { rejectValue: any }
->("auth/login", async (data, { rejectWithValue }) => {
+>("auth/login", async (data, { dispatch, rejectWithValue }) => {
   try {
-    const res = await api.post(`${API_URL}/login`, data);
-    return res.data.user;
+    await api.post(`${API_URL}/login`, data, {
+      withCredentials: true,
+    });
+
+    // IMPORTANT: fetch profile AFTER cookie is set
+    await dispatch(fetchProfile()).unwrap();
+
   } catch (err: any) {
     return rejectWithValue(err.response?.data || "Login failed");
   }
 });
+
 
 // GOOGLE LOGIN
 export const googleLogin = createAsyncThunk<
@@ -180,11 +185,10 @@ const authSlice = createSlice({
       .addCase(loginUser.pending, (state) => {
         state.loading = true;
       })
-      .addCase(loginUser.fulfilled, (state, action: PayloadAction<User>) => {
-        state.loading = false;
-        state.user = action.payload;
-        state.isAuthenticated = true;
-      })
+     .addCase(loginUser.fulfilled, (state) => {
+  state.loading = false;
+})
+
       .addCase(loginUser.rejected, (state, action: any) => {
         state.loading = false;
         state.error = action.payload?.message;
